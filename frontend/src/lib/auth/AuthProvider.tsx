@@ -8,9 +8,9 @@ export interface User {
   nama: string;
   jabatan: string;
   kemandoran: number;
-  kemandoranPpro: number;
-  kemandoranNama: string;
-  kemandoranKode: string | null;
+  kemandoran_ppro: number;
+  kemandoran_nama: string;
+  kemandoran_kode: string | null;
 }
 
 export interface AuthState {

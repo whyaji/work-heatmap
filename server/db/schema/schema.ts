@@ -1,3 +1,5 @@
+import { tinyint } from 'drizzle-orm/mysql-core';
+import { int } from 'drizzle-orm/mysql-core';
 import {
   bigint,
   boolean,
@@ -10,40 +12,40 @@ import {
 
 export const userSchema = mysqlTable('user', {
   id: bigint('id', { mode: 'number', unsigned: true }).autoincrement().notNull().primaryKey(),
-  username: varchar('username', { length: 255 }).notNull(),
-  nama: varchar('nama', { length: 255 }).notNull(),
-  jabatan: varchar('jabatan', { length: 255 }).notNull(),
+  username: varchar('username', { length: 255 }),
+  nama: varchar('nama', { length: 255 }),
+  jabatan: varchar('jabatan', { length: 255 }),
   kemandoran: bigint('kemandoran', { mode: 'number', unsigned: true }),
-  kemandoranPpro: bigint('kemandoran_ppro', { mode: 'number', unsigned: true }),
-  kemandoranNama: varchar('kemandoran_nama', { length: 255 }),
-  kemandoranKode: varchar('kemandoran_kode', { length: 255 }),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
-  deletedAt: timestamp('deleted_at'),
+  kemandoran_ppro: bigint('kemandoran_ppro', { mode: 'number', unsigned: true }),
+  kemandoran_nama: varchar('kemandoran_nama', { length: 255 }),
+  kemandoran_kode: varchar('kemandoran_kode', { length: 255 }),
+  created_at: timestamp('created_at').notNull().defaultNow(),
+  updated_at: timestamp('updated_at').notNull().defaultNow(),
+  deleted_at: timestamp('deleted_at'),
 });
 
 export const coordinateHistorySchema = mysqlTable(
   'coordinate_history',
   {
-    id: varchar('id', { length: 255 }).primaryKey(),
-    userId: bigint('user_id', { mode: 'number', unsigned: true })
+    id: varchar('id', { length: 36 }).primaryKey(),
+    user_id: bigint('user_id', { mode: 'number', unsigned: true })
       .notNull()
       .references(() => userSchema.id),
     timestamp: timestamp('timestamp').notNull(),
-    lat: decimal('lat', { precision: 10, scale: 8 }).notNull(),
-    lon: decimal('lon', { precision: 10, scale: 8 }).notNull(),
-    accuracy: bigint('accuracy', { mode: 'number', unsigned: true }).notNull(),
-    speed: decimal('speed', { precision: 10, scale: 2 }).notNull(),
-    bearing: bigint('bearing', { mode: 'number', unsigned: true }).notNull(),
-    activity: varchar('activity', { length: 255 }).notNull(),
-    battery: bigint('battery', { mode: 'number', unsigned: true }).notNull(),
-    network: varchar('network', { length: 255 }).notNull(),
-    provider: varchar('provider', { length: 255 }).notNull(),
-    insideGeofence: boolean('inside_geofence').notNull().default(false),
-    h3Index: varchar('h3_index', { length: 255 }).notNull(),
-    createdAt: timestamp('created_at').notNull().defaultNow(),
-    updatedAt: timestamp('updated_at').notNull().defaultNow(),
-    deletedAt: timestamp('deleted_at'),
+    lat: decimal('lat', { precision: 11, scale: 8 }).notNull(),
+    lon: decimal('lon', { precision: 11, scale: 8 }).notNull(),
+    accuracy: int('accuracy', { unsigned: true }).notNull(),
+    speed: decimal('speed', { precision: 8, scale: 2 }),
+    bearing: int('bearing', { unsigned: true }),
+    activity: varchar('activity', { length: 50 }),
+    battery: tinyint('battery', { unsigned: true }),
+    network: varchar('network', { length: 20 }),
+    provider: varchar('provider', { length: 50 }),
+    inside_geofence: boolean('inside_geofence').default(false),
+    h3index: varchar('h3index', { length: 50 }),
+    created_at: timestamp('created_at').notNull().defaultNow(),
+    updated_at: timestamp('updated_at').notNull().defaultNow().onUpdateNow(),
+    deleted_at: timestamp('deleted_at'),
   },
-  (table) => [index('idx_user_id').on(table.userId)]
+  (table) => [index('idx_user_id').on(table.user_id)]
 );

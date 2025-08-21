@@ -1,7 +1,7 @@
 {
   "version": "5",
   "dialect": "mysql",
-  "id": "74fc468b-d832-49b5-87c2-137fcb4b7368",
+  "id": "fe4000ca-652a-425d-b1f0-9119828d625f",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "coordinate_history": {
@@ -9,7 +9,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "varchar(255)",
+          "type": "varchar(36)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
@@ -30,80 +30,80 @@
         },
         "lat": {
           "name": "lat",
-          "type": "decimal(10,8)",
+          "type": "decimal(11,8)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "lon": {
           "name": "lon",
-          "type": "decimal(10,8)",
+          "type": "decimal(11,8)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "accuracy": {
           "name": "accuracy",
-          "type": "bigint unsigned",
+          "type": "int unsigned",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "speed": {
           "name": "speed",
-          "type": "decimal(10,2)",
+          "type": "decimal(8,2)",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "autoincrement": false
         },
         "bearing": {
           "name": "bearing",
-          "type": "bigint unsigned",
+          "type": "int unsigned",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "autoincrement": false
         },
         "activity": {
           "name": "activity",
-          "type": "varchar(255)",
+          "type": "varchar(50)",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "autoincrement": false
         },
         "battery": {
           "name": "battery",
-          "type": "bigint unsigned",
+          "type": "tinyint unsigned",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "autoincrement": false
         },
         "network": {
           "name": "network",
-          "type": "varchar(255)",
+          "type": "varchar(20)",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "autoincrement": false
         },
         "provider": {
           "name": "provider",
-          "type": "varchar(255)",
+          "type": "varchar(50)",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "autoincrement": false
         },
         "inside_geofence": {
           "name": "inside_geofence",
           "type": "boolean",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "autoincrement": false,
           "default": false
         },
-        "h3_index": {
-          "name": "h3_index",
-          "type": "varchar(255)",
+        "h3index": {
+          "name": "h3index",
+          "type": "varchar(50)",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "autoincrement": false
         },
         "created_at": {
@@ -120,6 +120,7 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
+          "onUpdate": true,
           "default": "(now())"
         },
         "deleted_at": {
@@ -179,21 +180,21 @@
           "name": "username",
           "type": "varchar(255)",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "autoincrement": false
         },
         "nama": {
           "name": "nama",
           "type": "varchar(255)",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "autoincrement": false
         },
         "jabatan": {
           "name": "jabatan",
           "type": "varchar(255)",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "autoincrement": false
         },
         "kemandoran": {

@@ -9,6 +9,6 @@ export const coordinateHistoryRoute = new Hono().use(authMiddleware).get('/', as
   const coordinateHistories = await db
     .select()
     .from(coordinateHistorySchema)
-    .orderBy(desc(coordinateHistorySchema.createdAt));
+    .orderBy(desc(coordinateHistorySchema.created_at));
   return c.json(coordinateHistories);
 });

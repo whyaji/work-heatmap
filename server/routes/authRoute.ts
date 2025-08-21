@@ -76,9 +76,9 @@ export const authRoute = new Hono().post('/login', async (c) => {
       nama: responseDataUser.nama,
       jabatan: responseDataUser.jabatan,
       kemandoran: responseDataUser.kemandoran,
-      kemandoranPpro: responseDataUser.kemandoran_ppro,
-      kemandoranNama: responseDataUser.kemandoran_nama,
-      kemandoranKode: responseDataUser.kemandoran_kode,
+      kemandoran_ppro: responseDataUser.kemandoran_ppro,
+      kemandoran_nama: responseDataUser.kemandoran_nama,
+      kemandoran_kode: responseDataUser.kemandoran_kode,
     };
 
     // check if user is found in database
