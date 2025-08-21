@@ -49,9 +49,6 @@ export const authRoute = new Hono().post('/login', async (c) => {
     // get username and password from body
     const { username, password } = await c.req.json();
 
-    console.log(`${env.AUTH_API_URL}/login`);
-    console.log(username, password);
-
     // call auth api
     const response = await fetch(`${env.AUTH_API_URL}/login`, {
       method: 'POST',
@@ -60,8 +57,6 @@ export const authRoute = new Hono().post('/login', async (c) => {
         'Content-Type': 'application/json',
       },
     });
-
-    console.log(response);
 
     if (!response.ok) {
       return c.json({ error: 'Invalid username or password', response }, 401);

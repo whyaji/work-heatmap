@@ -108,7 +108,7 @@ export const LoginScreen = () => {
 
       // Redirect to the intended page or dashboard
       const redirectTo = search.redirect || '/dashboard';
-      navigate({ to: redirectTo as any });
+      window.location.href = redirectTo as any;
     } catch (error) {
       toast({
         title: 'Login Failed',

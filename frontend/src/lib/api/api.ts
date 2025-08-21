@@ -1,7 +1,7 @@
 import { type ApiRoutes } from '@server/app';
 import { hc } from 'hono/client';
 
-const authToken = localStorage.getItem('accessToken');
+const authToken = localStorage.getItem('auth_token');
 
 const client = hc<ApiRoutes>('/', {
   headers: {

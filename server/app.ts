@@ -6,6 +6,7 @@ import { logger } from 'hono/logger';
 import { authRoute } from './routes/authRoute';
 import { coordinateHistoryRoute } from './routes/coordinateHistoryRoute';
 import { massUploadRoute } from './routes/massUploadRoute';
+import { userRoute } from './routes/userRoute';
 
 const app = new Hono();
 
@@ -17,7 +18,8 @@ const apiRoutes = app
   .basePath('/api/v1')
   .route('/auth', authRoute)
   .route('/mass-upload', massUploadRoute)
-  .route('/coordinate-history', coordinateHistoryRoute);
+  .route('/coordinate-history', coordinateHistoryRoute)
+  .route('/user', userRoute);
 
 // Serve files from public directory
 app.get('/uploads/*', serveStatic({ root: './server/public' }));
