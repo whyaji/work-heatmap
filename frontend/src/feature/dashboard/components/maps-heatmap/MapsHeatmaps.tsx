@@ -1,4 +1,4 @@
-import { CircleMarker, Popup, useMap } from 'react-leaflet';
+import { CircleMarker, Popup } from 'react-leaflet';
 import { HeatmapLayer } from 'react-leaflet-heatmap-layer-v3';
 import { cellToLatLng, latLngToCell, cellArea } from 'h3-js';
 import { useMemo, useState } from 'react';
@@ -18,7 +18,6 @@ import { FiEye, FiEyeOff, FiChevronUp, FiChevronDown, FiLayers, FiInfo } from 'r
 
 // Heatmap data processing component
 export const HeatmapDataProcessor = ({ data }: { data: any[] }) => {
-  const map = useMap();
   const [showIndividualMarkers, setShowIndividualMarkers] = useState(true);
   const [showH3Zones, setShowH3Zones] = useState(true);
   const [showControls, setShowControls] = useState(true);
@@ -83,14 +82,6 @@ export const HeatmapDataProcessor = ({ data }: { data: any[] }) => {
 
     return Object.values(h3Counts);
   }, [data]);
-
-  // Fit map bounds to data
-  useMemo(() => {
-    if (heatmapData.length > 0) {
-      const bounds = heatmapData.map((point) => [point.lat, point.lng]);
-      map.fitBounds(bounds as any);
-    }
-  }, [heatmapData, map]);
 
   // Convert to heatmap format: [lat, lng, intensity]
   const heatmapPoints = useMemo(() => {
