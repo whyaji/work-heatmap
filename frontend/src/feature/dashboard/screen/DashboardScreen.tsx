@@ -11,7 +11,6 @@ import {
   StatNumber,
   StatHelpText,
   Avatar,
-  Badge,
   Icon,
   Flex,
   useToast,
@@ -25,7 +24,6 @@ import {
   Input,
   FormControl,
   FormLabel,
-  ButtonGroup,
   Spinner,
   Alert,
   AlertIcon,
@@ -44,18 +42,13 @@ import {
   FiMap,
   FiUsers,
   FiActivity,
-  FiTarget,
   FiMapPin,
   FiShield,
   FiFilter,
   FiCalendar,
   FiUser,
-  FiChevronLeft,
-  FiChevronRight,
   FiRefreshCw,
-  FiBarChart2,
   FiLayers,
-  FiInfo,
   FiMaximize,
   FiMinimize,
 } from 'react-icons/fi';
@@ -120,14 +113,12 @@ export const DashboardScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const { isOpen: isFiltersOpen, onOpen: onFiltersOpen, onClose: onFiltersClose } = useDisclosure();
-  const { isOpen: isInfoOpen, onOpen: onInfoOpen, onClose: onInfoClose } = useDisclosure();
   const {
     isOpen: isMapLayersOpen,
     onOpen: onMapLayersOpen,
     onClose: onMapLayersClose,
   } = useDisclosure();
   const filtersRef = useRef<HTMLButtonElement>(null);
-  const infoRef = useRef<HTMLButtonElement>(null);
   const mapLayersRef = useRef<HTMLButtonElement>(null);
 
   const [selectedMapTile, setSelectedMapTile] = useState(listUrl[0]);
@@ -206,18 +197,12 @@ export const DashboardScreen = () => {
     onFiltersClose();
   }, [startDate, endDate, selectedUserId, filters.limit, onFiltersClose]);
 
-  const handlePageChange = (newPage: number) => {
-    setFilters((prev) => ({ ...prev, page: newPage.toString() }));
-  };
-
   const stats = useMemo(() => {
     if (!coordinateHistoryResponse?.data) return [];
 
     const data = coordinateHistoryResponse.data;
     const totalCoordinates = data.length;
     const uniqueUsers = new Set(data.map((coord) => coord.user_id)).size;
-    const totalPages = coordinateHistoryResponse.pagination.totalPages;
-    const currentPage = coordinateHistoryResponse.pagination.page;
 
     return [
       {
@@ -241,28 +226,6 @@ export const DashboardScreen = () => {
         icon: FiUsers,
         color: 'green',
         gradient: 'linear(to-r, green.400, green.600)',
-      },
-      {
-        label: 'Total Pages',
-        number: totalPages.toString(),
-        change: currentPage.toString(),
-        changePercent: `${Math.round((currentPage / totalPages) * 100)}%`,
-        isPositive: true,
-        helpText: 'current page',
-        icon: FiBarChart2,
-        color: 'purple',
-        gradient: 'linear(to-r, purple.400, purple.600)',
-      },
-      {
-        label: 'Data Coverage',
-        number: `${Math.round((totalCoordinates / 1000) * 100)}%`,
-        change: '+0',
-        changePercent: '0%',
-        isPositive: true,
-        helpText: 'coverage rate',
-        icon: FiTarget,
-        color: 'orange',
-        gradient: 'linear(to-r, orange.400, orange.600)',
       },
     ];
   }, [coordinateHistoryResponse]);
@@ -481,33 +444,6 @@ export const DashboardScreen = () => {
                 variant="ghost"
                 size={{ base: 'sm', md: 'md' }}
                 onClick={onFiltersOpen}
-                bg={controlsBg}
-                backdropFilter="blur(10px)"
-                border="1px solid"
-                borderColor={borderColor}
-                borderRadius="lg"
-                shadow="lg"
-                _hover={{ bg: 'rgba(255, 255, 255, 0.98)' }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.pointerEvents = 'auto';
-                  e.currentTarget.style.userSelect = 'none';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.pointerEvents = 'auto';
-                  e.currentTarget.style.userSelect = 'auto';
-                }}
-              />
-            </Tooltip>
-
-            {/* Info Button */}
-            <Tooltip label="Map Information">
-              <IconButton
-                ref={infoRef}
-                aria-label="Map info"
-                icon={<FiInfo />}
-                variant="ghost"
-                size={{ base: 'sm', md: 'md' }}
-                onClick={onInfoOpen}
                 bg={controlsBg}
                 backdropFilter="blur(10px)"
                 border="1px solid"
@@ -811,141 +747,6 @@ export const DashboardScreen = () => {
                   Clear Filters
                 </Button>
               </HStack>
-            </VStack>
-          </DrawerBody>
-        </DrawerContent>
-      </Drawer>
-
-      {/* Info Drawer */}
-      <Drawer
-        isOpen={isInfoOpen}
-        placement="right"
-        onClose={onInfoClose}
-        finalFocusRef={infoRef}
-        size="md">
-        <DrawerOverlay />
-        <DrawerContent>
-          <DrawerCloseButton />
-          <DrawerHeader borderBottomWidth="1px" color="gray.800" fontWeight="bold" fontSize="lg">
-            Map Information
-          </DrawerHeader>
-          <DrawerBody>
-            <VStack spacing={6} align="stretch" pt={4}>
-              <Card>
-                <CardBody>
-                  <VStack spacing={4} align="stretch">
-                    <HStack spacing={3}>
-                      <Icon as={FiMap} color="purple.500" boxSize={5} />
-                      <Text fontWeight="bold" color="gray.800">
-                        Worker Activity Heatmap
-                      </Text>
-                    </HStack>
-                    <Text fontSize="sm" color="gray.700">
-                      H3-based coordinate clustering and visualization for quality control worker
-                      tracking.
-                    </Text>
-                  </VStack>
-                </CardBody>
-              </Card>
-
-              <Card>
-                <CardBody>
-                  <VStack spacing={4} align="stretch">
-                    <HStack spacing={3}>
-                      <Icon as={FiLayers} color="blue.500" boxSize={5} />
-                      <Text fontWeight="bold" color="gray.800">
-                        Map Layers
-                      </Text>
-                    </HStack>
-                    <VStack spacing={2} align="stretch">
-                      <HStack justify="space-between">
-                        <Text fontSize="sm" color="gray.700">
-                          Individual Markers
-                        </Text>
-                        <Badge colorScheme="blue" size="sm">
-                          Active
-                        </Badge>
-                      </HStack>
-                      <HStack justify="space-between">
-                        <Text fontSize="sm" color="gray.700">
-                          H3 Zones
-                        </Text>
-                        <Badge colorScheme="red" size="sm">
-                          Active
-                        </Badge>
-                      </HStack>
-                      <HStack justify="space-between">
-                        <Text fontSize="sm" color="gray.700">
-                          Heatmap
-                        </Text>
-                        <Badge colorScheme="green" size="sm">
-                          Active
-                        </Badge>
-                      </HStack>
-                    </VStack>
-                  </VStack>
-                </CardBody>
-              </Card>
-
-              {coordinateHistoryResponse?.pagination &&
-                coordinateHistoryResponse.pagination.totalPages > 1 && (
-                  <Card>
-                    <CardBody>
-                      <VStack spacing={4} align="stretch">
-                        <HStack spacing={3}>
-                          <Icon as={FiBarChart2} color="purple.500" boxSize={5} />
-                          <Text fontWeight="bold" color="gray.800">
-                            Pagination
-                          </Text>
-                        </HStack>
-                        <Text fontSize="sm" color="gray.700">
-                          Showing page {coordinateHistoryResponse.pagination.page} of{' '}
-                          {coordinateHistoryResponse.pagination.totalPages} (
-                          {coordinateHistoryResponse.pagination.total} total records)
-                        </Text>
-                        <ButtonGroup size="sm" isAttached variant="outline">
-                          <IconButton
-                            aria-label="Previous page"
-                            icon={<FiChevronLeft />}
-                            onClick={() =>
-                              handlePageChange(coordinateHistoryResponse.pagination.page - 1)
-                            }
-                            isDisabled={!coordinateHistoryResponse.pagination.hasPrev}
-                          />
-                          {Array.from(
-                            {
-                              length: Math.min(5, coordinateHistoryResponse.pagination.totalPages),
-                            },
-                            (_, i) => {
-                              const pageNum = i + 1;
-                              return (
-                                <Button
-                                  key={pageNum}
-                                  variant={
-                                    pageNum === coordinateHistoryResponse.pagination.page
-                                      ? 'solid'
-                                      : 'outline'
-                                  }
-                                  onClick={() => handlePageChange(pageNum)}
-                                  colorScheme="blue">
-                                  {pageNum}
-                                </Button>
-                              );
-                            }
-                          )}
-                          <IconButton
-                            aria-label="Next page"
-                            icon={<FiChevronRight />}
-                            onClick={() =>
-                              handlePageChange(coordinateHistoryResponse.pagination.page + 1)
-                            }
-                            isDisabled={!coordinateHistoryResponse.pagination.hasNext}
-                          />
-                        </ButtonGroup>
-                      </VStack>
-                    </CardBody>
-                  </Card>
-                )}
             </VStack>
           </DrawerBody>
         </DrawerContent>

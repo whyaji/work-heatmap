@@ -341,6 +341,11 @@ export const LoginScreen = () => {
                               boxShadow: '0 0 0 1px var(--chakra-colors-purple-500)',
                             }}
                             borderRadius="xl"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                handleSubmit(onSubmit)();
+                              }
+                            }}
                           />
                           <InputRightElement>
                             <IconButton
