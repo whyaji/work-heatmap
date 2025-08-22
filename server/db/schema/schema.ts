@@ -19,9 +19,27 @@ export const userSchema = mysqlTable('user', {
   kemandoran_ppro: bigint('kemandoran_ppro', { mode: 'number', unsigned: true }),
   kemandoran_nama: varchar('kemandoran_nama', { length: 255 }),
   kemandoran_kode: varchar('kemandoran_kode', { length: 255 }),
+  regional: varchar('regional', { length: 255 }),
+  wilayah: varchar('wilayah', { length: 255 }),
+  company: varchar('company', { length: 255 }),
+  company_abbr: varchar('company_abbr', { length: 255 }),
+  company_name: varchar('company_name', { length: 255 }),
+  dept_id: varchar('dept_id', { length: 255 }),
+  dept_abbr: varchar('dept_abbr', { length: 255 }),
+  dept_name: varchar('dept_name', { length: 255 }),
   created_at: timestamp('created_at').notNull().defaultNow(),
   updated_at: timestamp('updated_at').notNull().defaultNow(),
   deleted_at: timestamp('deleted_at'),
+});
+
+export const userAuthSchema = mysqlTable('user_auth', {
+  id: bigint('id', { mode: 'number', unsigned: true }).autoincrement().notNull().primaryKey(),
+  user_id: bigint('user_id', { mode: 'number', unsigned: true })
+    .notNull()
+    .references(() => userSchema.id),
+  cmp_token: varchar('cmp_token', { length: 1200 }).notNull(),
+  created_at: timestamp('created_at').notNull().defaultNow(),
+  updated_at: timestamp('updated_at').notNull().defaultNow().onUpdateNow(),
 });
 
 export const coordinateHistorySchema = mysqlTable(

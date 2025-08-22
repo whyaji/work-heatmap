@@ -12,7 +12,7 @@ const envSchema = z.object({
   DB_NAME: z.string(),
   JWT_SECRET: z.string(),
   HASH_SALT: z.string().default('10'),
-  AUTH_API_URL: z.string(),
+  CMP_API_URL: z.string(),
 });
 
 export default envSchema.parse(process.env);

@@ -3,6 +3,7 @@ import { serveStatic } from 'hono/bun';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 
+import { areaRoute } from './routes/areaRoute';
 import { authRoute } from './routes/authRoute';
 import { coordinateHistoryRoute } from './routes/coordinateHistoryRoute';
 import { massUploadRoute } from './routes/massUploadRoute';
@@ -19,7 +20,8 @@ const apiRoutes = app
   .route('/auth', authRoute)
   .route('/mass-upload', massUploadRoute)
   .route('/coordinate-history', coordinateHistoryRoute)
-  .route('/user', userRoute);
+  .route('/user', userRoute)
+  .route('/area', areaRoute);
 
 // Serve files from public directory
 app.get('/uploads/*', serveStatic({ root: './server/public' }));

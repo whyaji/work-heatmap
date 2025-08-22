@@ -8,6 +8,13 @@
       "when": 1755746380811,
       "tag": "0000_steep_serpent_society",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1755834589439,
+      "tag": "0001_blushing_boomer",
+      "breakpoints": true
     }
   ]
 }

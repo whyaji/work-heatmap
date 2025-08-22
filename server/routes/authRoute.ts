@@ -3,7 +3,7 @@ import { Hono } from 'hono';
 import { sign } from 'hono/jwt';
 
 import { db } from '../db/database';
-import { userSchema } from '../db/schema/schema';
+import { userAuthSchema, userSchema } from '../db/schema/schema';
 import env from '../lib/env';
 
 interface ResponseAuthApi {
@@ -28,6 +28,14 @@ interface ResponseUserType {
   kemandoran_ppro: number;
   kemandoran_nama: string;
   kemandoran_kode: string | null;
+  regional?: string;
+  wilayah?: string;
+  company?: string;
+  company_abbr?: string;
+  company_name?: string;
+  dept_id?: string;
+  dept_abbr?: string;
+  dept_name?: string;
 }
 
 // Enhanced token generation
@@ -50,7 +58,7 @@ export const authRoute = new Hono().post('/login', async (c) => {
     const { username, password } = await c.req.json();
 
     // call auth api
-    const response = await fetch(`${env.AUTH_API_URL}/login`, {
+    const response = await fetch(`${env.CMP_API_URL}/auth/login`, {
       method: 'POST',
       body: JSON.stringify({ username, password }),
       headers: {
@@ -74,6 +82,14 @@ export const authRoute = new Hono().post('/login', async (c) => {
       kemandoran_ppro: responseDataUser.kemandoran_ppro,
       kemandoran_nama: responseDataUser.kemandoran_nama,
       kemandoran_kode: responseDataUser.kemandoran_kode,
+      regional: responseDataUser.regional,
+      wilayah: responseDataUser.wilayah,
+      company: responseDataUser.company,
+      company_abbr: responseDataUser.company_abbr,
+      company_name: responseDataUser.company_name,
+      dept_id: responseDataUser.dept_id,
+      dept_abbr: responseDataUser.dept_abbr,
+      dept_name: responseDataUser.dept_name,
     };
 
     // check if user is found in database
@@ -85,6 +101,22 @@ export const authRoute = new Hono().post('/login', async (c) => {
     } else {
       // update user to database
       await db.update(userSchema).set(dataUser).where(eq(userSchema.id, dataUser.id));
+    }
+
+    const userAuth = await db
+      .select()
+      .from(userAuthSchema)
+      .where(eq(userAuthSchema.user_id, dataUser.id));
+
+    if (userAuth.length === 0) {
+      // insert user auth to database
+      await db.insert(userAuthSchema).values({ user_id: dataUser.id, cmp_token: data.data.token });
+    } else {
+      // update user auth to database
+      await db
+        .update(userAuthSchema)
+        .set({ cmp_token: data.data.token })
+        .where(eq(userAuthSchema.user_id, dataUser.id));
     }
 
     const { accessToken } = await generateAuthTokens(dataUser);
