@@ -1,5 +1,4 @@
 import { CircleMarker, Popup } from 'react-leaflet';
-import { HeatmapLayer } from 'react-leaflet-heatmap-layer-v3';
 import { cellToLatLng, latLngToCell, cellArea } from 'h3-js';
 import { useMemo, useState } from 'react';
 import {
@@ -15,6 +14,9 @@ import {
   Badge,
 } from '@chakra-ui/react';
 import { FiEye, FiEyeOff, FiChevronUp, FiChevronDown, FiLayers, FiInfo } from 'react-icons/fi';
+import { HeatmapLayerFactory } from '@vgrid/react-leaflet-heatmap-layer';
+
+const HeatmapLayer = HeatmapLayerFactory<[number, number, number]>();
 
 // Heatmap data processing component
 export const HeatmapDataProcessor = ({ data }: { data: any[] }) => {
@@ -22,20 +24,6 @@ export const HeatmapDataProcessor = ({ data }: { data: any[] }) => {
   const [showH3Zones, setShowH3Zones] = useState(true);
   const [showControls, setShowControls] = useState(true);
   const [showLegend, setShowLegend] = useState(true);
-
-  // Debug: Log data structure to identify issues
-  useMemo(() => {
-    if (data.length > 0) {
-      console.log('Sample coordinate data:', data[0]);
-      console.log('Data types:', {
-        lat: typeof data[0]?.lat,
-        lon: typeof data[0]?.lon,
-        latValue: data[0]?.lat,
-        lonValue: data[0]?.lon,
-      });
-      console.log('Total coordinates:', data.length);
-    }
-  }, [data]);
 
   const heatmapData = useMemo(() => {
     const h3Counts: {
@@ -203,20 +191,7 @@ export const HeatmapDataProcessor = ({ data }: { data: any[] }) => {
         points={heatmapPoints}
         longitudeExtractor={(m: any) => m[1]}
         latitudeExtractor={(m: any) => m[0]}
-        intensityExtractor={(m: any) => m[2]}
-        max={2}
-        radius={20}
-        blur={10}
-        maxZoom={18}
-        minOpacity={0.3}
-        gradient={{
-          0.0: '#0000ff',
-          0.2: '#00ffff',
-          0.4: '#00ff00',
-          0.6: '#ffff00',
-          0.8: '#ff8000',
-          1.0: '#ff0000',
-        }}
+        intensityExtractor={(m: any) => parseFloat(m[2])}
       />
       {/* Individual markers for detailed view */}
       {individualMarkers}
