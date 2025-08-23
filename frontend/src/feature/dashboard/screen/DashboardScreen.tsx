@@ -63,7 +63,7 @@ import { getUsers } from '@/lib/api/userApi';
 import 'leaflet/dist/leaflet.css';
 import { HeatmapDataProcessor } from '../components/maps-heatmap/MapsHeatmaps';
 import { MapContainer, TileLayer } from 'react-leaflet';
-import { ZoomControls, ZoomListener } from '@/components/maps-location';
+import { MapBoundsListener, ZoomControls, ZoomListener } from '@/components/maps-location';
 import {
   getEstatesAfdeling,
   getGeoJsonBlok,
@@ -137,6 +137,12 @@ export const DashboardScreen = () => {
   const [sidebarWidth, setSidebarWidth] = useState(320);
   const [isResizing, setIsResizing] = useState(false);
   const [hasAppliedFilters, setHasAppliedFilters] = useState(false);
+  const [windowBounds, setWindowBounds] = useState<{
+    north: number;
+    south: number;
+    east: number;
+    west: number;
+  } | null>(null);
 
   const {
     isOpen: isMapLayersOpen,
@@ -171,6 +177,7 @@ export const DashboardScreen = () => {
   const [selectedEstateId, setSelectedEstateId] = useState<string>('');
   const [selectedAfdelingId, setSelectedAfdelingId] = useState<string>('');
   const [selectedGeoJsonBlok, setSelectedGeoJsonBlok] = useState<BlokGeoJSON | null>(null);
+  const [coordinateHistoryData, setCoordinateHistoryData] = useState<any[]>([]);
 
   const bgColor = useColorModeValue('gray.50', 'gray.900');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
@@ -257,11 +264,12 @@ export const DashboardScreen = () => {
   const {
     data: coordinateHistoryResponse,
     isError: isErrorCoordinateHistory,
+    isLoading: isLoadingCoordinateHistory,
     refetch: refetchCoordinateHistory,
   } = useQuery({
-    queryKey: ['coordinateHistory', filters],
-    queryFn: () => getCoordinateHistory(filters),
-    enabled: hasAppliedFilters, // Only fetch when filters are applied
+    queryKey: ['coordinateHistory', filters, windowBounds],
+    queryFn: () => getCoordinateHistory(filters, windowBounds),
+    enabled: hasAppliedFilters && windowBounds !== null, // Only fetch when filters are applied
   });
 
   const { data: usersResponse, isError: isErrorUsers } = useQuery({
@@ -367,9 +375,12 @@ export const DashboardScreen = () => {
   }, [startDate, endDate, selectedUserId, filters.limit]);
 
   const stats = useMemo(() => {
-    if (!coordinateHistoryResponse?.data) return [];
+    const data = coordinateHistoryResponse?.data ?? [];
 
-    const data = coordinateHistoryResponse.data;
+    if (!isLoadingCoordinateHistory) {
+      setCoordinateHistoryData(data);
+    }
+
     const totalCoordinates = data.length;
     const uniqueUsers = new Set(data.map((coord) => coord.user_id)).size;
 
@@ -502,60 +513,52 @@ export const DashboardScreen = () => {
                 <Text fontSize="sm" fontWeight="semibold" color="gray.700">
                   Statistics
                 </Text>
-                {hasAppliedFilters && coordinateHistoryResponse?.data ? (
-                  stats.map((stat, index) => (
-                    <Card
-                      key={index}
-                      shadow="md"
-                      border="1px solid"
-                      borderColor={borderColor}
-                      _hover={{
-                        shadow: 'lg',
-                        transform: 'translateY(-2px)',
-                        borderColor: `${stat.color}.200`,
-                      }}
-                      transition="all 0.3s"
-                      borderRadius="lg"
-                      overflow="hidden"
-                      animation={`${slideIn} 0.5s ease-out ${index * 0.1}s both`}>
-                      <Box h="2px" bgGradient={stat.gradient} />
-                      <CardBody p={3}>
-                        <Stat>
-                          <Flex justify="space-between" align="center">
-                            <HStack spacing={2} align="center">
-                              <Box
-                                p={2}
-                                bgGradient={stat.gradient}
-                                color="white"
-                                borderRadius="md"
-                                _hover={{ transform: 'scale(1.1)' }}
-                                transition="all 0.2s">
-                                <Icon as={stat.icon} boxSize={3} />
-                              </Box>
-                              <VStack spacing={0} align="start">
-                                <StatLabel color="gray.600" fontSize="xs" fontWeight="medium">
-                                  {stat.label}
-                                </StatLabel>
-                                <StatNumber color="gray.800" fontSize="lg" fontWeight="black">
-                                  {stat.number}
-                                </StatNumber>
-                                <StatHelpText color="gray.500" fontSize="xs" mb={0}>
-                                  {stat.helpText}
-                                </StatHelpText>
-                              </VStack>
-                            </HStack>
-                          </Flex>
-                        </Stat>
-                      </CardBody>
-                    </Card>
-                  ))
-                ) : (
-                  <Card p={4} textAlign="center" bg="gray.50">
-                    <Text fontSize="sm" color="gray.500">
-                      Apply filters to see statistics
-                    </Text>
+                {stats.map((stat, index) => (
+                  <Card
+                    key={index}
+                    shadow="md"
+                    border="1px solid"
+                    borderColor={borderColor}
+                    _hover={{
+                      shadow: 'lg',
+                      transform: 'translateY(-2px)',
+                      borderColor: `${stat.color}.200`,
+                    }}
+                    transition="all 0.3s"
+                    borderRadius="lg"
+                    overflow="hidden"
+                    animation={`${slideIn} 0.5s ease-out ${index * 0.1}s both`}>
+                    <Box h="2px" bgGradient={stat.gradient} />
+                    <CardBody p={3}>
+                      <Stat>
+                        <Flex justify="space-between" align="center">
+                          <HStack spacing={2} align="center">
+                            <Box
+                              p={2}
+                              bgGradient={stat.gradient}
+                              color="white"
+                              borderRadius="md"
+                              _hover={{ transform: 'scale(1.1)' }}
+                              transition="all 0.2s">
+                              <Icon as={stat.icon} boxSize={3} />
+                            </Box>
+                            <VStack spacing={0} align="start">
+                              <StatLabel color="gray.600" fontSize="xs" fontWeight="medium">
+                                {stat.label}
+                              </StatLabel>
+                              <StatNumber color="gray.800" fontSize="lg" fontWeight="black">
+                                {stat.number}
+                              </StatNumber>
+                              <StatHelpText color="gray.500" fontSize="xs" mb={0}>
+                                {stat.helpText}
+                              </StatHelpText>
+                            </VStack>
+                          </HStack>
+                        </Flex>
+                      </Stat>
+                    </CardBody>
                   </Card>
-                )}
+                ))}
               </VStack>
 
               <Divider />
@@ -960,9 +963,8 @@ export const DashboardScreen = () => {
             )}
             <ZoomControls onZoomIn={handleZoomIn} onZoomOut={handleZoomOut} />
             <ZoomListener onZoomChange={setMapZoom} />
-            {coordinateHistoryResponse?.data && (
-              <HeatmapDataProcessor data={coordinateHistoryResponse.data} />
-            )}
+            <HeatmapDataProcessor data={coordinateHistoryData} />
+            <MapBoundsListener setWindowBounds={setWindowBounds} />
           </MapContainer>
         </Box>
       </Box>

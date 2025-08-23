@@ -13,12 +13,17 @@ const querySchema = z.object({
   startDate: z.string().optional(),
   endDate: z.string().optional(),
   userId: z.string().transform(Number).optional(),
+  north: z.string().optional(),
+  south: z.string().optional(),
+  east: z.string().optional(),
+  west: z.string().optional(),
 });
 
 export const coordinateHistoryRoute = new Hono()
   .use(authMiddleware)
   .get('/', zValidator('query', querySchema), async (c) => {
-    const { page, limit, startDate, endDate, userId } = c.req.valid('query');
+    const { page, limit, startDate, endDate, userId, north, south, east, west } =
+      c.req.valid('query');
 
     const offset = (page - 1) * limit;
 
@@ -35,6 +40,17 @@ export const coordinateHistoryRoute = new Hono()
 
     if (userId) {
       conditions.push(eq(coordinateHistorySchema.user_id, userId));
+    }
+
+    if (north && south && east && west) {
+      conditions.push(
+        and(
+          gte(coordinateHistorySchema.lat, south),
+          lte(coordinateHistorySchema.lat, north),
+          gte(coordinateHistorySchema.lon, west),
+          lte(coordinateHistorySchema.lon, east)
+        )
+      );
     }
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;

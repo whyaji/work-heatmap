@@ -1,7 +1,7 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { Box, VStack, IconButton, Tooltip } from '@chakra-ui/react';
 import { FiZoomIn, FiZoomOut } from 'react-icons/fi';
-import { useMap } from 'react-leaflet';
+import { useMap, useMapEvents } from 'react-leaflet';
 
 // Zoom Control Component that uses the map instance
 export function ZoomControls({
@@ -77,6 +77,56 @@ export function ZoomListener({ onZoomChange }: { onZoomChange: (zoom: number) =>
       map.off('zoomend', handleZoomEnd);
     };
   }, [map, onZoomChange]);
+
+  return null;
+}
+
+export function MapBoundsListener({
+  setWindowBounds,
+  debounceTime = 2000,
+}: {
+  setWindowBounds: React.Dispatch<
+    React.SetStateAction<{
+      north: number;
+      south: number;
+      east: number;
+      west: number;
+    } | null>
+  >;
+  debounceTime?: number;
+}) {
+  const timeoutRef = useRef<Timer | null>(null);
+
+  const debouncedSetBounds = useCallback(
+    (windowBounds: { north: number; south: number; east: number; west: number }) => {
+      // Clear timeout sebelumnya jika ada
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+
+      // Set timeout baru
+      timeoutRef.current = setTimeout(() => {
+        setWindowBounds(windowBounds);
+      }, debounceTime);
+    },
+    [setWindowBounds, debounceTime]
+  );
+
+  useMapEvents({
+    moveend: (e) => {
+      const map = e.target;
+      const bounds = map.getBounds();
+
+      const windowBounds = {
+        north: bounds.getNorthEast().lat,
+        south: bounds.getSouthWest().lat,
+        east: bounds.getNorthEast().lng,
+        west: bounds.getSouthWest().lng,
+      };
+
+      debouncedSetBounds(windowBounds);
+    },
+  });
 
   return null;
 }

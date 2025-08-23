@@ -46,8 +46,22 @@ export interface CoordinateHistoryResponse {
 }
 
 export const getCoordinateHistory = async (
-  filters: CoordinateHistoryFilters = {}
+  filters: CoordinateHistoryFilters = {},
+  windowBounds: {
+    north: number;
+    south: number;
+    east: number;
+    west: number;
+  } | null = null
 ): Promise<CoordinateHistoryResponse> => {
-  const response = await coordinateHistoryApi.$get({ query: filters });
+  const response = await coordinateHistoryApi.$get({
+    query: {
+      ...filters,
+      north: windowBounds?.north.toString(),
+      south: windowBounds?.south.toString(),
+      east: windowBounds?.east.toString(),
+      west: windowBounds?.west.toString(),
+    },
+  });
   return response.json();
 };
