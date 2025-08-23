@@ -37,6 +37,10 @@ import {
   DrawerCloseButton,
   Divider,
   DrawerOverlay,
+  Slider,
+  SliderTrack,
+  SliderFilledTrack,
+  SliderThumb,
 } from '@chakra-ui/react';
 import {
   FiMap,
@@ -143,6 +147,7 @@ export const DashboardScreen = () => {
     east: number;
     west: number;
   } | null>(null);
+  const [blokOpacity, setBlokOpacity] = useState(0.5);
 
   const {
     isOpen: isMapLayersOpen,
@@ -171,6 +176,7 @@ export const DashboardScreen = () => {
   });
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+
   const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [selectedRegionalId, setSelectedRegionalId] = useState<string>('');
   const [selectedWilayahId, setSelectedWilayahId] = useState<string>('');
@@ -569,6 +575,20 @@ export const DashboardScreen = () => {
                   Area
                 </Text>
 
+                {/* slider for blok opacity */}
+                <Slider
+                  aria-label="slider-ex-1"
+                  value={blokOpacity}
+                  onChange={(value) => setBlokOpacity(value)}
+                  min={0}
+                  max={1}
+                  step={0.05}>
+                  <SliderTrack>
+                    <SliderFilledTrack />
+                  </SliderTrack>
+                  <SliderThumb />
+                </Slider>
+
                 {/* Regional Select */}
                 <FormControl>
                   <Select
@@ -959,7 +979,7 @@ export const DashboardScreen = () => {
             attributionControl={false}>
             <TileLayer url={selectedMapTile.value} attribution={selectedMapTile.source} />
             {selectedGeoJsonBlok && (
-              <BloksPolygonLayer blokGeoJSON={selectedGeoJsonBlok} opacity={0.1} />
+              <BloksPolygonLayer blokGeoJSON={selectedGeoJsonBlok} opacity={blokOpacity} />
             )}
             <ZoomControls onZoomIn={handleZoomIn} onZoomOut={handleZoomOut} />
             <ZoomListener onZoomChange={setMapZoom} />

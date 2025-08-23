@@ -100,6 +100,7 @@ export const BloksPolygonLayer: FC<{ blokGeoJSON: BlokGeoJSON; opacity: number }
             user-select: none;
             text-align: center;
             white-space: nowrap;
+            opacity: ${opacity};
           ">${feature.properties.block}</div>`,
           className: 'polygon-label',
           iconSize: [100, 20],
