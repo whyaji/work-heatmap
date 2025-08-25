@@ -82,9 +82,16 @@ export function ZoomListener({ onZoomChange }: { onZoomChange: (zoom: number) =>
 }
 
 export function MapBoundsListener({
+  windowBounds: windowBoundsProp,
   setWindowBounds,
   debounceTime = 2000,
 }: {
+  windowBounds: {
+    north: number;
+    south: number;
+    east: number;
+    west: number;
+  } | null;
   setWindowBounds: React.Dispatch<
     React.SetStateAction<{
       north: number;
@@ -96,6 +103,7 @@ export function MapBoundsListener({
   debounceTime?: number;
 }) {
   const timeoutRef = useRef<Timer | null>(null);
+  const map = useMap();
 
   const debouncedSetBounds = useCallback(
     (windowBounds: { north: number; south: number; east: number; west: number }) => {
@@ -111,6 +119,21 @@ export function MapBoundsListener({
     },
     [setWindowBounds, debounceTime]
   );
+
+  useEffect(() => {
+    if (windowBoundsProp === null) {
+      const bounds = map.getBounds();
+
+      const windowBounds = {
+        north: bounds.getNorthEast().lat,
+        south: bounds.getSouthWest().lat,
+        east: bounds.getNorthEast().lng,
+        west: bounds.getSouthWest().lng,
+      };
+
+      debouncedSetBounds(windowBounds);
+    }
+  }, [windowBoundsProp]);
 
   useMapEvents({
     moveend: (e) => {

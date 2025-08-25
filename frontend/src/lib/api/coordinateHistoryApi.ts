@@ -1,4 +1,6 @@
+import { PaginationType } from '@/types/pagination.type';
 import { api } from './api';
+import { CoordinateHistoryType, H3StatsType, H3Type } from '@/types/coordinateHistory.type';
 
 const coordinateHistoryApi = api['coordinate-history'];
 
@@ -10,39 +12,19 @@ export interface CoordinateHistoryFilters {
   userId?: string;
 }
 
+export interface CoordinateHistoryH3Filters extends CoordinateHistoryFilters {
+  resolution?: string;
+}
+
 export interface CoordinateHistoryResponse {
-  data: Array<{
-    id: string;
-    user_id: number;
-    timestamp: string;
-    lat: string;
-    lon: string;
-    accuracy: number;
-    speed: string | null;
-    bearing: number | null;
-    activity: string | null;
-    battery: number | null;
-    network: string | null;
-    provider: string | null;
-    inside_geofence: boolean | null;
-    h3index: string | null;
-    created_at: string;
-    updated_at: string;
-    user: {
-      id: number;
-      username: string | null;
-      nama: string | null;
-      jabatan: string | null;
-    } | null;
-  }>;
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-    hasNext: boolean;
-    hasPrev: boolean;
-  };
+  data: CoordinateHistoryType[];
+  pagination: PaginationType;
+}
+
+export interface CoordinateHistoryH3Response {
+  data: H3Type[];
+  pagination: PaginationType;
+  h3Stats: H3StatsType;
 }
 
 export const getCoordinateHistory = async (
@@ -55,6 +37,27 @@ export const getCoordinateHistory = async (
   } | null = null
 ): Promise<CoordinateHistoryResponse> => {
   const response = await coordinateHistoryApi.$get({
+    query: {
+      ...filters,
+      north: windowBounds?.north.toString(),
+      south: windowBounds?.south.toString(),
+      east: windowBounds?.east.toString(),
+      west: windowBounds?.west.toString(),
+    },
+  });
+  return response.json();
+};
+
+export const getCoordinateHistoryH3 = async (
+  filters: CoordinateHistoryH3Filters = {},
+  windowBounds: {
+    north: number;
+    south: number;
+    east: number;
+    west: number;
+  } | null = null
+): Promise<CoordinateHistoryH3Response> => {
+  const response = await coordinateHistoryApi['h3-index'].$get({
     query: {
       ...filters,
       north: windowBounds?.north.toString(),

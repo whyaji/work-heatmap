@@ -62,10 +62,17 @@ import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { keyframes } from '@emotion/react';
 import { useAuth } from '@/lib/auth';
 import { useQuery } from '@tanstack/react-query';
-import { getCoordinateHistory, CoordinateHistoryFilters } from '@/lib/api/coordinateHistoryApi';
+import {
+  getCoordinateHistory,
+  CoordinateHistoryFilters,
+  getCoordinateHistoryH3,
+} from '@/lib/api/coordinateHistoryApi';
 import { getUsers } from '@/lib/api/userApi';
 import 'leaflet/dist/leaflet.css';
-import { HeatmapDataProcessor } from '../components/maps-heatmap/MapsHeatmaps';
+import {
+  HeatmapCoordinateDataProcessor,
+  HeatmapH3DataProcessor,
+} from '../components/maps-heatmap/MapsHeatmaps';
 import { MapContainer, TileLayer } from 'react-leaflet';
 import { MapBoundsListener, ZoomControls, ZoomListener } from '@/components/maps-location';
 import {
@@ -77,6 +84,8 @@ import {
 } from '@/lib/api/areaApi';
 import { BlokGeoJSON } from '../types/blockGeoJson.type';
 import { BloksPolygonLayer } from '../components/bloks-polygon-layer/BloksPolygonLayer';
+import { CoordinateHistoryType, H3Type } from '@/types/coordinateHistory.type';
+import { LatLngExpression } from 'leaflet';
 
 // Animation keyframes
 const pulse = keyframes`
@@ -147,7 +156,7 @@ export const DashboardScreen = () => {
     east: number;
     west: number;
   } | null>(null);
-  const [blokOpacity, setBlokOpacity] = useState(0.5);
+  const [blokOpacity, setBlokOpacity] = useState(0.3);
 
   const {
     isOpen: isMapLayersOpen,
@@ -160,7 +169,10 @@ export const DashboardScreen = () => {
   const resizeHandleRef = useRef<HTMLDivElement>(null);
 
   const [selectedMapTile, setSelectedMapTile] = useState(listUrl[0]);
-  const [mapZoom, setMapZoom] = useState(6);
+  const [mapZoom, setMapZoom] = useState(7);
+  const mapCenter: LatLngExpression = [0, 114.5];
+
+  console.log('mapZoom', mapZoom);
 
   const handleZoomIn = () => {
     setMapZoom((prev) => Math.min(prev + 1, 18));
@@ -183,7 +195,8 @@ export const DashboardScreen = () => {
   const [selectedEstateId, setSelectedEstateId] = useState<string>('');
   const [selectedAfdelingId, setSelectedAfdelingId] = useState<string>('');
   const [selectedGeoJsonBlok, setSelectedGeoJsonBlok] = useState<BlokGeoJSON | null>(null);
-  const [coordinateHistoryData, setCoordinateHistoryData] = useState<any[]>([]);
+  const [coordinateHistoryData, setCoordinateHistoryData] = useState<CoordinateHistoryType[]>([]);
+  const [coordinateHistoryH3Data, setCoordinateHistoryH3Data] = useState<H3Type[]>([]);
 
   const bgColor = useColorModeValue('gray.50', 'gray.900');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
@@ -266,6 +279,8 @@ export const DashboardScreen = () => {
     }
   }, [geoJsonBlok, isLoadingGeoJsonBlok, isErrorGeoJsonBlok]);
 
+  const isUsingH3 = mapZoom < 15;
+
   // Only fetch data when filters have been applied
   const {
     data: coordinateHistoryResponse,
@@ -275,7 +290,18 @@ export const DashboardScreen = () => {
   } = useQuery({
     queryKey: ['coordinateHistory', filters, windowBounds],
     queryFn: () => getCoordinateHistory(filters, windowBounds),
-    enabled: hasAppliedFilters && windowBounds !== null, // Only fetch when filters are applied
+    enabled: hasAppliedFilters && windowBounds !== null && !isUsingH3, // Only fetch when filters are applied
+  });
+
+  const {
+    data: coordinateHistoryH3Response,
+    isError: isErrorCoordinateHistoryH3,
+    isLoading: isLoadingCoordinateHistoryH3,
+    refetch: refetchCoordinateHistoryH3,
+  } = useQuery({
+    queryKey: ['coordinateHistoryH3', filters, windowBounds],
+    queryFn: () => getCoordinateHistoryH3(filters, windowBounds),
+    enabled: hasAppliedFilters && windowBounds !== null && isUsingH3, // Only fetch when filters are applied
   });
 
   const { data: usersResponse, isError: isErrorUsers } = useQuery({
@@ -347,7 +373,11 @@ export const DashboardScreen = () => {
     }
 
     setRefreshing(true);
-    await refetchCoordinateHistory();
+    if (isUsingH3) {
+      await refetchCoordinateHistoryH3();
+    } else {
+      await refetchCoordinateHistory();
+    }
     setRefreshing(false);
     toast({
       title: 'Data Refreshed',
@@ -381,14 +411,25 @@ export const DashboardScreen = () => {
   }, [startDate, endDate, selectedUserId, filters.limit]);
 
   const stats = useMemo(() => {
-    const data = coordinateHistoryResponse?.data ?? [];
+    let totalCoordinates = 0;
+    let uniqueUsers = 0;
 
-    if (!isLoadingCoordinateHistory) {
-      setCoordinateHistoryData(data);
+    if (isUsingH3) {
+      const data = coordinateHistoryH3Response?.data ?? [];
+      const stats = coordinateHistoryH3Response?.h3Stats ?? null;
+      if (!isLoadingCoordinateHistoryH3) {
+        setCoordinateHistoryH3Data(data);
+      }
+      totalCoordinates = stats?.totalCoordinates ?? 0;
+      uniqueUsers = stats?.totalUniqueUsers ?? 0;
+    } else {
+      const data = coordinateHistoryResponse?.data ?? [];
+      if (!isLoadingCoordinateHistory) {
+        setCoordinateHistoryData(data);
+      }
+      totalCoordinates = data.length;
+      uniqueUsers = new Set(data.map((coord) => coord.user_id)).size;
     }
-
-    const totalCoordinates = data.length;
-    const uniqueUsers = new Set(data.map((coord) => coord.user_id)).size;
 
     return [
       {
@@ -414,7 +455,7 @@ export const DashboardScreen = () => {
         gradient: 'linear(to-r, green.400, green.600)',
       },
     ];
-  }, [coordinateHistoryResponse]);
+  }, [coordinateHistoryResponse, coordinateHistoryH3Response]);
 
   const handleFullScreen = () => {
     if (!document.fullscreenElement) {
@@ -430,7 +471,7 @@ export const DashboardScreen = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
-  if (isErrorCoordinateHistory || isErrorUsers) {
+  if (isErrorCoordinateHistory || isErrorUsers || isErrorCoordinateHistoryH3) {
     return (
       <Box minH="100vh" bg={bgColor} p={8}>
         <Alert status="error">
@@ -581,8 +622,8 @@ export const DashboardScreen = () => {
                   value={blokOpacity}
                   onChange={(value) => setBlokOpacity(value)}
                   min={0}
-                  max={1}
-                  step={0.05}>
+                  max={0.5}
+                  step={0.02}>
                   <SliderTrack>
                     <SliderFilledTrack />
                   </SliderTrack>
@@ -971,7 +1012,7 @@ export const DashboardScreen = () => {
         {/* Map Container */}
         <Box p={0} h="full" pointerEvents={isResizing ? 'none' : 'auto'}>
           <MapContainer
-            center={[-2.548926, 118.014863]}
+            center={mapCenter}
             zoom={mapZoom}
             className="w-full h-full z-10"
             zoomControl={false}
@@ -983,8 +1024,14 @@ export const DashboardScreen = () => {
             )}
             <ZoomControls onZoomIn={handleZoomIn} onZoomOut={handleZoomOut} />
             <ZoomListener onZoomChange={setMapZoom} />
-            <HeatmapDataProcessor data={coordinateHistoryData} />
-            <MapBoundsListener setWindowBounds={setWindowBounds} />
+            {(isUsingH3 || (coordinateHistoryData.length === 0 && isLoadingCoordinateHistory)) && (
+              <HeatmapH3DataProcessor data={coordinateHistoryH3Data} />
+            )}
+            {(!isUsingH3 ||
+              (coordinateHistoryH3Data.length === 0 && isLoadingCoordinateHistoryH3)) && (
+              <HeatmapCoordinateDataProcessor data={coordinateHistoryData} />
+            )}
+            <MapBoundsListener windowBounds={windowBounds} setWindowBounds={setWindowBounds} />
           </MapContainer>
         </Box>
       </Box>
