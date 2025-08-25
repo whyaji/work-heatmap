@@ -3,11 +3,18 @@ import { FC, useMemo } from 'react';
 import { Box, Text } from '@chakra-ui/react';
 import { HeatmapLayerFactory } from '@vgrid/react-leaflet-heatmap-layer';
 import { CoordinateHistoryType, H3Type } from '@/types/coordinateHistory.type';
+import MarkerClusterGroup from 'react-leaflet-markercluster';
+import L from 'leaflet';
 
 const HeatmapLayer = HeatmapLayerFactory<[number, number, number]>();
 
 // Heatmap data processing component
-export const HeatmapCoordinateDataProcessor: FC<{ data: CoordinateHistoryType[] }> = ({ data }) => {
+export const HeatmapCoordinateDataProcessor: FC<{
+  data: CoordinateHistoryType[];
+  showHeatmap?: boolean;
+  showClusteredMarkers?: boolean;
+  showIndividualMarkers?: boolean;
+}> = ({ data, showHeatmap = true, showClusteredMarkers = true, showIndividualMarkers = true }) => {
   const heatmapData = useMemo(() => {
     const h3Counts: {
       [key: string]: {
@@ -64,10 +71,9 @@ export const HeatmapCoordinateDataProcessor: FC<{ data: CoordinateHistoryType[] 
     return allPoints;
   }, [data, heatmapData]);
 
-  // Individual markers for detailed information
+  // Individual markers for detailed information with clustering
   const individualMarkers = useMemo(() => {
     return data
-      .slice(0, 100)
       .map((coord, index) => {
         if (coord.lat && coord.lon) {
           const lat = parseFloat(coord.lat);
@@ -82,7 +88,7 @@ export const HeatmapCoordinateDataProcessor: FC<{ data: CoordinateHistoryType[] 
             <CircleMarker
               key={`marker-${index}`}
               center={[lat, lng]}
-              radius={2}
+              radius={5}
               fillColor="rgba(0, 0, 255, 0.4)"
               color="rgba(0, 0, 255, 0.6)"
               weight={1}
@@ -110,19 +116,57 @@ export const HeatmapCoordinateDataProcessor: FC<{ data: CoordinateHistoryType[] 
   return (
     <>
       {/* Heatmap Layer with improved configuration */}
-      <HeatmapLayer
-        points={heatmapPoints}
-        longitudeExtractor={(m: any) => m[1]}
-        latitudeExtractor={(m: any) => m[0]}
-        intensityExtractor={(m: any) => parseFloat(m[2])}
-      />
-      {/* Individual markers for detailed view */}
-      {individualMarkers}
+      {showHeatmap && (
+        <HeatmapLayer
+          points={heatmapPoints}
+          longitudeExtractor={(m: any) => m[1]}
+          latitudeExtractor={(m: any) => m[0]}
+          intensityExtractor={(m: any) => parseFloat(m[2])}
+        />
+      )}
+      {/* Clustered individual markers for detailed view */}
+      {showClusteredMarkers && (
+        <MarkerClusterGroup
+          chunkedLoading
+          maxClusterRadius={30}
+          spiderfyOnMaxZoom={true}
+          showCoverageOnHover={true}
+          zoomToBoundsOnClick={true}
+          removeOutsideVisibleBounds={true}
+          animate={true}
+          animateAddingMarkers={true}
+          iconCreateFunction={(cluster: any) => {
+            const count = cluster.getChildCount();
+            let size = 'small';
+            let className = 'marker-cluster-small';
+
+            if (count > 100) {
+              size = 'large';
+              className = 'marker-cluster-large';
+            } else if (count > 10) {
+              size = 'medium';
+              className = 'marker-cluster-medium';
+            }
+
+            return L.divIcon({
+              html: `<div><span>${count}</span></div>`,
+              className: `marker-cluster ${className}`,
+              iconSize: L.point(40, 40),
+            });
+          }}>
+          {individualMarkers}
+        </MarkerClusterGroup>
+      )}
+      {showIndividualMarkers && !showClusteredMarkers && individualMarkers}
     </>
   );
 };
 
-export const HeatmapH3DataProcessor: FC<{ data: H3Type[] }> = ({ data }) => {
+export const HeatmapH3DataProcessor: FC<{
+  data: H3Type[];
+  showHeatmap?: boolean;
+  showH3Markers?: boolean;
+}> = ({ data, showHeatmap = true, showH3Markers = true }) => {
   // Process H3 data for heatmap visualization
   const heatmapPoints = useMemo(() => {
     return data.map((h3Item) => {
@@ -145,13 +189,20 @@ export const HeatmapH3DataProcessor: FC<{ data: H3Type[] }> = ({ data }) => {
           return null;
         }
 
+        // dynamic radius based on count
+        const radius = Math.max(3, Math.min(h3Item.count / 10, 8));
+
+        // dynamic color based on count
+        const color = `rgba(${Math.min(h3Item.count * 10, 255)}, 0, 0, 0.4)`;
+        const fillColor = `rgba(${Math.min(h3Item.count * 10, 255)}, 0, 0, 0.8)`;
+
         return (
           <CircleMarker
             key={`h3-marker-${index}`}
             center={[lat, lon]}
-            radius={Math.max(3, Math.min(h3Item.count / 10, 8))} // Dynamic radius based on count
-            fillColor="rgba(255, 0, 0, 0.4)"
-            color="rgba(255, 0, 0, 0.8)"
+            radius={radius}
+            fillColor={fillColor}
+            color={color}
             weight={2}
             opacity={0.7}>
             <Popup>
@@ -184,14 +235,16 @@ export const HeatmapH3DataProcessor: FC<{ data: H3Type[] }> = ({ data }) => {
   return (
     <>
       {/* H3 Heatmap Layer */}
-      <HeatmapLayer
-        points={heatmapPoints}
-        longitudeExtractor={(m: any) => m[1]}
-        latitudeExtractor={(m: any) => m[0]}
-        intensityExtractor={(m: any) => parseFloat(m[2])}
-      />
+      {showHeatmap && (
+        <HeatmapLayer
+          points={heatmapPoints}
+          longitudeExtractor={(m: any) => m[1]}
+          latitudeExtractor={(m: any) => m[0]}
+          intensityExtractor={(m: any) => parseFloat(m[2])}
+        />
+      )}
       {/* H3 Cell Markers */}
-      {h3Markers}
+      {showH3Markers && h3Markers}
     </>
   );
 };

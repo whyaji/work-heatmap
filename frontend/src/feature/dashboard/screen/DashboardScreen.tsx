@@ -57,6 +57,7 @@ import {
   FiMinimize,
   FiChevronLeft,
   FiMenu,
+  FiGlobe,
 } from 'react-icons/fi';
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { keyframes } from '@emotion/react';
@@ -86,6 +87,7 @@ import { BlokGeoJSON } from '../types/blockGeoJson.type';
 import { BloksPolygonLayer } from '../components/bloks-polygon-layer/BloksPolygonLayer';
 import { CoordinateHistoryType, H3Type } from '@/types/coordinateHistory.type';
 import { LatLngExpression } from 'leaflet';
+import { MapsHeatmapLayerControl } from '../components/maps-heatmap-layer-control/MapsHeatmapLayerControl';
 
 // Animation keyframes
 const pulse = keyframes`
@@ -136,7 +138,7 @@ const listUrl: MapTileOption[] = [
     value:
       'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
     source: 'Esri World Imagery',
-    icon: FiMap,
+    icon: FiGlobe,
     description: 'High-resolution satellite imagery',
   },
 ];
@@ -157,6 +159,9 @@ export const DashboardScreen = () => {
     west: number;
   } | null>(null);
   const [blokOpacity, setBlokOpacity] = useState(0.3);
+  const [showHeatmap, setShowHeatmap] = useState(true);
+  const [showClusteredMarkers, setShowClusteredMarkers] = useState(true);
+  const [showMarker, setShowMarker] = useState(true);
 
   const {
     isOpen: isMapLayersOpen,
@@ -171,8 +176,6 @@ export const DashboardScreen = () => {
   const [selectedMapTile, setSelectedMapTile] = useState(listUrl[0]);
   const [mapZoom, setMapZoom] = useState(7);
   const mapCenter: LatLngExpression = [0, 114.5];
-
-  console.log('mapZoom', mapZoom);
 
   const handleZoomIn = () => {
     setMapZoom((prev) => Math.min(prev + 1, 18));
@@ -279,7 +282,7 @@ export const DashboardScreen = () => {
     }
   }, [geoJsonBlok, isLoadingGeoJsonBlok, isErrorGeoJsonBlok]);
 
-  const isUsingH3 = mapZoom < 15;
+  const isUsingH3 = mapZoom < 14;
 
   // Only fetch data when filters have been applied
   const {
@@ -1009,6 +1012,17 @@ export const DashboardScreen = () => {
           </Flex>
         </Box>
 
+        {/* Map Controls */}
+        <MapsHeatmapLayerControl
+          isUsingH3={isUsingH3}
+          showHeatmap={showHeatmap}
+          showClusteredMarkers={showClusteredMarkers}
+          showMarker={showMarker}
+          setShowHeatmap={setShowHeatmap}
+          setShowClusteredMarkers={setShowClusteredMarkers}
+          setShowMarker={setShowMarker}
+        />
+
         {/* Map Container */}
         <Box p={0} h="full" pointerEvents={isResizing ? 'none' : 'auto'}>
           <MapContainer
@@ -1025,11 +1039,20 @@ export const DashboardScreen = () => {
             <ZoomControls onZoomIn={handleZoomIn} onZoomOut={handleZoomOut} />
             <ZoomListener onZoomChange={setMapZoom} />
             {(isUsingH3 || (coordinateHistoryData.length === 0 && isLoadingCoordinateHistory)) && (
-              <HeatmapH3DataProcessor data={coordinateHistoryH3Data} />
+              <HeatmapH3DataProcessor
+                data={coordinateHistoryH3Data}
+                showHeatmap={showHeatmap}
+                showH3Markers={showMarker}
+              />
             )}
             {(!isUsingH3 ||
               (coordinateHistoryH3Data.length === 0 && isLoadingCoordinateHistoryH3)) && (
-              <HeatmapCoordinateDataProcessor data={coordinateHistoryData} />
+              <HeatmapCoordinateDataProcessor
+                data={coordinateHistoryData}
+                showHeatmap={showHeatmap}
+                showClusteredMarkers={showClusteredMarkers}
+                showIndividualMarkers={showMarker}
+              />
             )}
             <MapBoundsListener windowBounds={windowBounds} setWindowBounds={setWindowBounds} />
           </MapContainer>
