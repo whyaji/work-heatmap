@@ -39,7 +39,13 @@ export const MapsHeatmapLayerControl: FC<{
   const headerBg = useColorModeValue('gray.50', 'gray.800');
   const textColor = useColorModeValue('gray.700', 'gray.200');
   const activeFill = useColorModeValue('blue.50', 'blue.900');
+  const nonactiveFill = useColorModeValue('gray.50', 'gray.800');
   const activeBorder = useColorModeValue('blue.300', 'blue.400');
+
+  // Additional color values for hover states
+  const hoverBg = useColorModeValue('gray.100', 'gray.700');
+  const hoverNonactiveFill = useColorModeValue('gray.50', 'gray.800');
+  const hoverBorderColor = useColorModeValue('gray.300', 'gray.500');
 
   // Calculate total active layers
   const activeLayers = [showHeatmap, showClusteredMarkers && !isUsingH3, showMarker].filter(
@@ -75,7 +81,7 @@ export const MapsHeatmapLayerControl: FC<{
             justify="space-between"
             cursor="pointer"
             onClick={onToggle}
-            _hover={{ bg: useColorModeValue('gray.100', 'gray.700') }}
+            _hover={{ bg: hoverBg }}
             transition="background 0.2s">
             <HStack spacing={2}>
               <Icon as={FiEye} color="blue.500" boxSize={4} />
@@ -126,10 +132,8 @@ export const MapsHeatmapLayerControl: FC<{
                 fontWeight="500"
                 transition="all 0.2s"
                 _hover={{
-                  bg: showHeatmap ? activeFill : useColorModeValue('gray.50', 'gray.800'),
-                  borderColor: showHeatmap
-                    ? activeBorder
-                    : useColorModeValue('gray.300', 'gray.500'),
+                  bg: showHeatmap ? activeFill : hoverNonactiveFill,
+                  borderColor: showHeatmap ? activeBorder : hoverBorderColor,
                 }}>
                 Heatmap
                 {showHeatmap && (
@@ -163,12 +167,8 @@ export const MapsHeatmapLayerControl: FC<{
                   fontWeight="500"
                   transition="all 0.2s"
                   _hover={{
-                    bg: showClusteredMarkers
-                      ? activeFill
-                      : useColorModeValue('gray.50', 'gray.800'),
-                    borderColor: showClusteredMarkers
-                      ? activeBorder
-                      : useColorModeValue('gray.300', 'gray.500'),
+                    bg: showClusteredMarkers ? activeFill : hoverNonactiveFill,
+                    borderColor: showClusteredMarkers ? activeBorder : hoverBorderColor,
                   }}>
                   Clustered
                   {showClusteredMarkers && (
@@ -202,10 +202,8 @@ export const MapsHeatmapLayerControl: FC<{
                 fontWeight="500"
                 transition="all 0.2s"
                 _hover={{
-                  bg: showMarker ? activeFill : useColorModeValue('gray.50', 'gray.800'),
-                  borderColor: showMarker
-                    ? activeBorder
-                    : useColorModeValue('gray.300', 'gray.500'),
+                  bg: showMarker ? activeFill : hoverNonactiveFill,
+                  borderColor: showMarker ? activeBorder : hoverBorderColor,
                 }}>
                 Markers
                 {showMarker && (
@@ -248,7 +246,7 @@ export const MapsHeatmapLayerControl: FC<{
           justify="space-between"
           cursor="pointer"
           onClick={onToggle}
-          _hover={{ bg: useColorModeValue('gray.100', 'gray.700') }}
+          _hover={{ bg: hoverBg }}
           transition="background 0.2s">
           <HStack spacing={2}>
             <Icon as={FiEye} color="blue.500" boxSize={4} />
@@ -300,10 +298,8 @@ export const MapsHeatmapLayerControl: FC<{
                 fontWeight="500"
                 transition="all 0.2s"
                 _hover={{
-                  bg: showHeatmap ? activeFill : useColorModeValue('gray.50', 'gray.800'),
-                  borderColor: showHeatmap
-                    ? activeBorder
-                    : useColorModeValue('gray.300', 'gray.500'),
+                  bg: showHeatmap ? activeFill : nonactiveFill,
+                  borderColor: showHeatmap ? activeBorder : hoverBorderColor,
                 }}>
                 Heatmap
                 {showHeatmap && (
@@ -339,12 +335,8 @@ export const MapsHeatmapLayerControl: FC<{
                   fontWeight="500"
                   transition="all 0.2s"
                   _hover={{
-                    bg: showClusteredMarkers
-                      ? activeFill
-                      : useColorModeValue('gray.50', 'gray.800'),
-                    borderColor: showClusteredMarkers
-                      ? activeBorder
-                      : useColorModeValue('gray.300', 'gray.500'),
+                    bg: showClusteredMarkers ? activeFill : hoverNonactiveFill,
+                    borderColor: showClusteredMarkers ? activeBorder : hoverBorderColor,
                   }}>
                   Clustered
                   {showClusteredMarkers && (
@@ -380,10 +372,8 @@ export const MapsHeatmapLayerControl: FC<{
                 fontWeight="500"
                 transition="all 0.2s"
                 _hover={{
-                  bg: showMarker ? activeFill : useColorModeValue('gray.50', 'gray.800'),
-                  borderColor: showMarker
-                    ? activeBorder
-                    : useColorModeValue('gray.300', 'gray.500'),
+                  bg: showMarker ? activeFill : nonactiveFill,
+                  borderColor: showMarker ? activeBorder : hoverBorderColor,
                 }}>
                 Markers
                 {showMarker && (
