@@ -43,7 +43,7 @@ const pulse = keyframes`
   100% { transform: scale(1); }
 `;
 
-// Feature data untuk CWA QC Worker Tracking
+// Feature data untuk CWA+ QC Worker Tracking
 const features = [
   {
     icon: FiMap,
@@ -161,13 +161,13 @@ export const OnboardingScreen = () => {
               </Badge>
 
               <Heading size="3xl" fontWeight="black" lineHeight="shorter">
-                CWA
+                CWA+
                 <Text
                   as="span"
                   display="block"
                   bgGradient="linear(to-r, yellow.300, orange.300)"
                   bgClip="text">
-                  CBI Work Area
+                  CBI Work Area Plus
                 </Text>
               </Heading>
 
@@ -421,7 +421,7 @@ export const OnboardingScreen = () => {
               </Heading>
               <Text fontSize="xl" maxW="2xl" opacity={0.9}>
                 Bergabunglah dengan ribuan profesional QC yang telah merasakan peningkatan efisiensi
-                hingga 85% dengan CWA Worker Tracking System.
+                hingga 85% dengan CWA+ Worker Tracking System.
               </Text>
             </VStack>
 

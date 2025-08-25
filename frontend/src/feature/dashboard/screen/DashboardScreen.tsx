@@ -547,7 +547,7 @@ export const DashboardScreen = () => {
                   </Box>
                   <VStack spacing={0} align="start">
                     <Text fontSize="md" color="gray.800" fontWeight="black">
-                      CWA Control Center
+                      CBI Work Area Plus
                     </Text>
                     <Text fontSize="xs" color="gray.500">
                       Quality Control Worker Analytics
@@ -919,7 +919,7 @@ export const DashboardScreen = () => {
                   </Box>
                   <VStack spacing={0} align="start">
                     <Text fontSize="md" color="gray.800" fontWeight="black">
-                      CWA Control Center
+                      CBI Work Area Plus
                     </Text>
                     <Text fontSize="xs" color="gray.500">
                       Quality Control Worker Analytics

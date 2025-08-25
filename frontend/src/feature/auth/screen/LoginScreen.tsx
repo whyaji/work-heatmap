@@ -214,7 +214,7 @@ export const LoginScreen = () => {
                       display="block"
                       bgGradient="linear(to-r, yellow.300, orange.300)"
                       bgClip="text">
-                      CWA Dashboard
+                      CWA+ Dashboard
                     </Text>
                   </Heading>
 
