@@ -84,7 +84,7 @@ export function ZoomListener({ onZoomChange }: { onZoomChange: (zoom: number) =>
 export function MapBoundsListener({
   windowBounds: windowBoundsProp,
   setWindowBounds,
-  debounceTime = 2000,
+  debounceTime = 800,
 }: {
   windowBounds: {
     north: number;

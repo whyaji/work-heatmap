@@ -8,40 +8,49 @@ import L from 'leaflet';
 
 const HeatmapLayer = HeatmapLayerFactory<[number, number, number]>();
 
+const heatmapConfig = {
+  // Radius untuk setiap titik heatmap
+  radius: 30,
+  // Gradasi warna dari hijau muda ke merah
+  gradient: {
+    0.0: 'rgba(0, 255, 0, 0.8)', // Hijau terang dengan transparansi 80% (tidak terlihat)
+    0.2: 'rgba(128, 255, 0, 0.85)', // Hijau-kuning dengan transparansi 85% (minimal 1 tetangga)
+    0.4: 'rgba(255, 255, 0, 0.9)', // Kuning dengan transparansi 90% (2-3 tetangga)
+    0.6: 'rgba(255, 128, 0, 0.95)', // Orange dengan transparansi 95% (4-5 tetangga)
+    0.8: 'rgba(255, 64, 0, 1)', // Orange-merah opaque (6+ tetangga)
+    1.0: 'rgba(255, 0, 0, 1)', // Merah opaque (banyak tetangga)
+  },
+};
+
+const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+  const R = 6371000; // Radius bumi dalam meter
+  const φ1 = (lat1 * Math.PI) / 180;
+  const φ2 = (lat2 * Math.PI) / 180;
+  const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+  const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+
+  const a =
+    Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+    Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return R * c; // Jarak dalam meter
+};
+
 // Heatmap data processing component
 export const HeatmapCoordinateDataProcessor: FC<{
   data: CoordinateHistoryType[];
   showHeatmap?: boolean;
   showClusteredMarkers?: boolean;
   showIndividualMarkers?: boolean;
-}> = ({ data, showHeatmap = true, showClusteredMarkers = true, showIndividualMarkers = true }) => {
-  const heatmapData = useMemo(() => {
-    const h3Counts: {
-      [key: string]: {
-        count: number;
-        lat: number;
-        lng: number;
-        users: Set<number>;
-        coordinates: Array<[number, number]>;
-      };
-    } = {};
-
-    data.forEach((coord) => {
-      if (coord.lat && coord.lon) {
-        const lat = parseFloat(coord.lat);
-        const lng = parseFloat(coord.lon);
-
-        // Validate coordinates to prevent NaN values
-        if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
-          console.warn('Invalid coordinates detected:', coord);
-          return; // Skip invalid coordinates
-        }
-      }
-    });
-
-    return Object.values(h3Counts);
-  }, [data]);
-
+  nearbyDistance?: number;
+}> = ({
+  data,
+  showHeatmap = true,
+  showClusteredMarkers = true,
+  showIndividualMarkers = true,
+  nearbyDistance = 50,
+}) => {
   // Convert to heatmap format: [lat, lng, intensity]
   const heatmapPoints = useMemo(() => {
     // Create more granular heatmap points from individual coordinates
@@ -50,26 +59,34 @@ export const HeatmapCoordinateDataProcessor: FC<{
     data.forEach((coord) => {
       if (coord.lat && coord.lon) {
         const lat = parseFloat(coord.lat);
-        const lng = parseFloat(coord.lon);
+        const lon = parseFloat(coord.lon);
 
-        if (!isNaN(lat) && !isNaN(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
-          // Each coordinate gets a base intensity
-          allPoints.push([lat, lng, 1]);
+        const nearbyPoints = data.filter((otherPoint) => {
+          if (coord.id === otherPoint.id) return false;
+
+          const otherLat = parseFloat(otherPoint.lat);
+          const otherLon = parseFloat(otherPoint.lon);
+          const distance = calculateDistance(lat, lon, otherLat, otherLon);
+
+          return distance <= nearbyDistance;
+        });
+
+        // Intensitas HANYA berdasarkan jumlah titik terdekat
+        // Jika tidak ada titik terdekat = intensitas 0.1
+        // Semakin banyak titik terdekat = semakin tinggi intensitas
+        let intensity = 0.1;
+
+        if (nearbyPoints.length > 0) {
+          // Mulai dari 0.2 jika ada minimal 1 titik terdekat
+          intensity = 0.2 + nearbyPoints.length * 0.15;
+          intensity = Math.min(1.0, intensity);
         }
-      }
-    });
-
-    // Add H3 cluster centers with weighted intensity
-    heatmapData.forEach((cluster) => {
-      if (cluster.count > 1) {
-        // Higher intensity for clusters with more coordinates
-        const intensity = Math.min(cluster.count / 3, 2); // Cap at 2x intensity
-        allPoints.push([cluster.lat, cluster.lng, intensity]);
+        allPoints.push([lat, lon, intensity]);
       }
     });
 
     return allPoints;
-  }, [data, heatmapData]);
+  }, [data, nearbyDistance]);
 
   // Individual markers for detailed information with clustering
   const individualMarkers = useMemo(() => {
@@ -122,6 +139,7 @@ export const HeatmapCoordinateDataProcessor: FC<{
           longitudeExtractor={(m: any) => m[1]}
           latitudeExtractor={(m: any) => m[0]}
           intensityExtractor={(m: any) => parseFloat(m[2])}
+          {...heatmapConfig}
         />
       )}
       {/* Clustered individual markers for detailed view */}
@@ -137,14 +155,11 @@ export const HeatmapCoordinateDataProcessor: FC<{
           animateAddingMarkers={true}
           iconCreateFunction={(cluster: any) => {
             const count = cluster.getChildCount();
-            let size = 'small';
             let className = 'marker-cluster-small';
 
             if (count > 100) {
-              size = 'large';
               className = 'marker-cluster-large';
             } else if (count > 10) {
-              size = 'medium';
               className = 'marker-cluster-medium';
             }
 
@@ -189,8 +204,8 @@ export const HeatmapH3DataProcessor: FC<{
           return null;
         }
 
-        // dynamic radius based on count
-        const radius = Math.max(3, Math.min(h3Item.count / 10, 8));
+        // fix radius
+        const radius = 4;
 
         // dynamic color based on count
         const color = `rgba(${Math.min(h3Item.count * 10, 255)}, 0, 0, 0.4)`;
@@ -241,6 +256,7 @@ export const HeatmapH3DataProcessor: FC<{
           longitudeExtractor={(m: any) => m[1]}
           latitudeExtractor={(m: any) => m[0]}
           intensityExtractor={(m: any) => parseFloat(m[2])}
+          {...heatmapConfig}
         />
       )}
       {/* H3 Cell Markers */}

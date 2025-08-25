@@ -159,6 +159,18 @@ export const DashboardScreen = () => {
     west: number;
   } | null>(null);
   const [blokOpacity, setBlokOpacity] = useState(0.3);
+
+  const [nearbyDistance, setNearbyDistance] = useState(50);
+  const [tempNearbyDistance, setTempNearbyDistance] = useState(50);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setNearbyDistance(tempNearbyDistance);
+    }, 800);
+
+    return () => clearTimeout(timeout);
+  }, [tempNearbyDistance]);
+
   const [showHeatmap, setShowHeatmap] = useState(true);
   const [showClusteredMarkers, setShowClusteredMarkers] = useState(true);
   const [showMarker, setShowMarker] = useState(true);
@@ -303,7 +315,7 @@ export const DashboardScreen = () => {
     refetch: refetchCoordinateHistoryH3,
   } = useQuery({
     queryKey: ['coordinateHistoryH3', filters, windowBounds],
-    queryFn: () => getCoordinateHistoryH3(filters, windowBounds),
+    queryFn: () => getCoordinateHistoryH3({ ...filters, resolution: String(9) }, windowBounds),
     enabled: hasAppliedFilters && windowBounds !== null && isUsingH3, // Only fetch when filters are applied
   });
 
@@ -708,6 +720,20 @@ export const DashboardScreen = () => {
               </VStack>
 
               <Divider />
+              {/* input number for nearby distance */}
+              <Text fontSize="xs" color="gray.500">
+                Nearby Distance (meter)
+              </Text>
+              <Input
+                type="number"
+                min={1}
+                value={String(tempNearbyDistance)}
+                onChange={(e) => setTempNearbyDistance(Number(e.target.value))}
+                size="sm"
+                borderRadius="lg"
+              />
+
+              <Divider />
 
               {/* Filters Section */}
               <VStack spacing={4} align="stretch">
@@ -1052,6 +1078,7 @@ export const DashboardScreen = () => {
                 showHeatmap={showHeatmap}
                 showClusteredMarkers={showClusteredMarkers}
                 showIndividualMarkers={showMarker}
+                nearbyDistance={nearbyDistance}
               />
             )}
             <MapBoundsListener windowBounds={windowBounds} setWindowBounds={setWindowBounds} />
