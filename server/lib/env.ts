@@ -10,9 +10,16 @@ const envSchema = z.object({
   DB_USER: z.string(),
   DB_PASSWORD: z.string(),
   DB_NAME: z.string(),
+
+  REDIS_HOST: z.string().default('localhost'),
+  REDIS_PORT: z.string().default('6379'),
+  REDIS_PASSWORD: z.string(),
+
   JWT_SECRET: z.string(),
   HASH_SALT: z.string().default('10'),
+
   CMP_API_URL: z.string(),
+  CWA_REDIRECT_API_KEY: z.string(),
 });
 
 export default envSchema.parse(process.env);
