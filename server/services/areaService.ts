@@ -11,15 +11,24 @@ export interface AreaServiceResponse<T = any> {
   status: number;
 }
 
+export interface AreaType {
+  data: {
+    id: any;
+    abbr: any;
+    nama: any;
+  }[];
+  total: number;
+}
+
 export class AreaService {
-  private async fetchData(
+  private async fetchData<T>(
     c: Context,
     params: {
       select: string[];
       table: string;
       where?: Record<string, any>;
     }
-  ): Promise<AreaServiceResponse> {
+  ): Promise<AreaServiceResponse<T>> {
     try {
       const response = await authenticatedGetDataCmp({
         c,
@@ -37,7 +46,7 @@ export class AreaService {
       const data = await response.json();
       return {
         success: true,
-        data: remapKeyResponse(data),
+        data: remapKeyResponse(data) as T,
         status: 200,
       };
     } catch (error) {
@@ -50,55 +59,55 @@ export class AreaService {
     }
   }
 
-  async getRegionals(c: Context): Promise<AreaServiceResponse> {
-    return this.fetchData(c, {
+  async getRegionals(c: Context) {
+    return this.fetchData<AreaType>(c, {
       select: ['id', 'abbr', 'nama'],
       table: 'regional',
     });
   }
 
-  async getRegionalById(c: Context, id: string): Promise<AreaServiceResponse> {
-    return this.fetchData(c, {
+  async getRegionalById(c: Context, id: string) {
+    return this.fetchData<AreaType>(c, {
       select: ['id', 'abbr', 'nama'],
       table: 'regional',
       where: { id },
     });
   }
 
-  async getWilayahByRegionalId(c: Context, regionalId: string): Promise<AreaServiceResponse> {
-    return this.fetchData(c, {
+  async getWilayahByRegionalId(c: Context, regionalId: string) {
+    return this.fetchData<AreaType>(c, {
       select: ['id', 'abbr', 'nama'],
       table: 'wilayah',
       where: { regional: regionalId },
     });
   }
 
-  async getWilayahById(c: Context, id: string): Promise<AreaServiceResponse> {
-    return this.fetchData(c, {
+  async getWilayahById(c: Context, id: string) {
+    return this.fetchData<AreaType>(c, {
       select: ['id', 'abbr', 'nama'],
       table: 'wilayah',
       where: { id },
     });
   }
 
-  async getEstatesByWilayahId(c: Context, wilayahId: string): Promise<AreaServiceResponse> {
-    return this.fetchData(c, {
+  async getEstatesByWilayahId(c: Context, wilayahId: string) {
+    return this.fetchData<AreaType>(c, {
       select: ['id', 'abbr', 'nama'],
       table: 'estate',
       where: { wilayah: wilayahId },
     });
   }
 
-  async getEstateById(c: Context, id: string): Promise<AreaServiceResponse> {
-    return this.fetchData(c, {
+  async getEstateById(c: Context, id: string) {
+    return this.fetchData<AreaType>(c, {
       select: ['id', 'abbr', 'nama'],
       table: 'estate',
       where: { id },
     });
   }
 
-  async getAfdelingsByEstateId(c: Context, estateId: string): Promise<AreaServiceResponse> {
-    return this.fetchData(c, {
+  async getAfdelingsByEstateId(c: Context, estateId: string) {
+    return this.fetchData<AreaType>(c, {
       select: ['id', 'abbr', 'nama'],
       table: 'divisi',
       where: {
@@ -108,11 +117,7 @@ export class AreaService {
     });
   }
 
-  async getGeoJsonBlok(
-    c: Context,
-    estate: string,
-    afdeling?: string
-  ): Promise<AreaServiceResponse> {
+  async getGeoJsonBlok(c: Context, estate: string, afdeling?: string) {
     try {
       if (!estate) {
         return {

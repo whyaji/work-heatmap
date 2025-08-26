@@ -41,6 +41,8 @@ import {
   SliderTrack,
   SliderFilledTrack,
   SliderThumb,
+  Collapse,
+  useBreakpointValue,
 } from '@chakra-ui/react';
 import {
   FiMap,
@@ -55,9 +57,9 @@ import {
   FiLayers,
   FiMaximize,
   FiMinimize,
-  FiChevronLeft,
   FiMenu,
   FiGlobe,
+  FiChevronDown,
 } from 'react-icons/fi';
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { keyframes } from '@emotion/react';
@@ -107,16 +109,6 @@ const float = keyframes`
   100% { transform: translateY(0px); }
 `;
 
-const slideInLeft = keyframes`
-  from { transform: translateX(-100%); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
-`;
-
-const slideOutLeft = keyframes`
-  from { transform: translateX(0); opacity: 1; }
-  to { transform: translateX(-100%); opacity: 0; }
-`;
-
 interface MapTileOption {
   label: string;
   value: string;
@@ -148,7 +140,8 @@ export const DashboardScreen = () => {
   const toast = useToast();
   const [refreshing, setRefreshing] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const isMobile = useBreakpointValue({ base: true, md: false });
+  const { isOpen: isSidebarOpen, onToggle: toggleSidebar, onOpen: onSidebarOpen } = useDisclosure();
   const [sidebarWidth, setSidebarWidth] = useState(320);
   const [isResizing, setIsResizing] = useState(false);
   const [hasAppliedFilters, setHasAppliedFilters] = useState(false);
@@ -159,6 +152,15 @@ export const DashboardScreen = () => {
     west: number;
   } | null>(null);
   const [blokOpacity, setBlokOpacity] = useState(0.3);
+
+  // onFirstMount set if not mobile then open sidebar just run on first time
+  const isFirstMount = useRef(true);
+  useEffect(() => {
+    if (!isMobile && isFirstMount.current) {
+      onSidebarOpen();
+      isFirstMount.current = false;
+    }
+  }, [isMobile, onSidebarOpen]);
 
   const [nearbyDistance, setNearbyDistance] = useState(50);
   const [tempNearbyDistance, setTempNearbyDistance] = useState(50);
@@ -265,9 +267,9 @@ export const DashboardScreen = () => {
   const dataAfdeling = !isErrorAfdelings && afdelings && 'data' in afdelings ? afdelings.data : [];
 
   const selectedEstateAbbr =
-    dataEstate.find((estate: any) => String(estate.id) === selectedEstateId)?.abbr ?? null;
+    dataEstate.find((estate) => String(estate.id) === selectedEstateId)?.abbr ?? null;
   const selectedAfdelingAbbr =
-    dataAfdeling.find((afdeling: any) => String(afdeling.id) === selectedAfdelingId)?.abbr ?? null; // ex, AFD-OA
+    dataAfdeling.find((afdeling) => String(afdeling.id) === selectedAfdelingId)?.abbr ?? null; // ex, AFD-OA
   const selectedAfdelingShortName = selectedAfdelingAbbr
     ? selectedAfdelingAbbr.split('-')[1]
     : null; // ex, OA
@@ -482,10 +484,6 @@ export const DashboardScreen = () => {
     }
   };
 
-  const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
-  };
-
   if (isErrorCoordinateHistory || isErrorUsers || isErrorCoordinateHistoryH3) {
     return (
       <Box minH="100vh" bg={bgColor} p={8}>
@@ -506,10 +504,12 @@ export const DashboardScreen = () => {
       <Box
         ref={sidebarRef}
         position="absolute"
-        left={0}
-        top={0}
-        bottom={0}
-        w={isSidebarOpen ? sidebarWidth : 0}
+        left={2}
+        right={isMobile ? 2 : undefined}
+        top={2}
+        bottom={isSidebarOpen ? 2 : undefined}
+        borderRadius={10}
+        w={isMobile ? undefined : sidebarWidth}
         bg="white"
         borderRight="1px solid"
         borderColor={borderColor}
@@ -518,399 +518,26 @@ export const DashboardScreen = () => {
         transition={isResizing ? 'none' : 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)'}
         overflow="hidden">
         {/* Sidebar Content */}
-        <Box w={sidebarWidth} h="full" overflow="hidden" display="flex" flexDirection="column">
-          {/* Scrollable Content Container */}
-          <Box
-            flex="1"
-            overflowY="auto"
-            overflowX="hidden"
-            p={4}
-            opacity={isSidebarOpen ? 1 : 0}
-            transition="opacity 0.3s ease"
-            animation={
-              isSidebarOpen ? `${slideInLeft} 0.3s ease-out` : `${slideOutLeft} 0.3s ease-in`
-            }
-            css={{
-              '&::-webkit-scrollbar': {
-                width: '6px',
-              },
-              '&::-webkit-scrollbar-track': {
-                background: 'transparent',
-              },
-              '&::-webkit-scrollbar-thumb': {
-                background: '#CBD5E0',
-                borderRadius: '3px',
-              },
-              '&::-webkit-scrollbar-thumb:hover': {
-                background: '#A0AEC0',
-              },
-            }}>
-            {/* Header */}
-            <VStack spacing={4} align="stretch" mb={6}>
-              <HStack justify="space-between" align="center">
-                <HStack spacing={3}>
-                  <Box
-                    p={2}
-                    bgGradient="linear(to-r, purple.500, blue.500)"
-                    color="white"
-                    borderRadius="lg"
-                    animation={`${pulse} 3s infinite`}>
-                    <Icon as={FiActivity} boxSize={5} />
-                  </Box>
-                  <VStack spacing={0} align="start">
-                    <Text fontSize="md" color="gray.800" fontWeight="black">
-                      CBI Work Area Plus
-                    </Text>
-                    <Text fontSize="xs" color="gray.500">
-                      Quality Control Worker Analytics
-                    </Text>
-                  </VStack>
-                </HStack>
-              </HStack>
-
-              <Divider />
-
-              {/* Stats Section */}
-              <VStack spacing={3} align="stretch">
-                <Text fontSize="sm" fontWeight="semibold" color="gray.700">
-                  Statistics
-                </Text>
-                {stats.map((stat, index) => (
-                  <Card
-                    key={index}
-                    shadow="md"
-                    border="1px solid"
-                    borderColor={borderColor}
-                    _hover={{
-                      shadow: 'lg',
-                      transform: 'translateY(-2px)',
-                      borderColor: `${stat.color}.200`,
-                    }}
-                    transition="all 0.3s"
-                    borderRadius="lg"
-                    overflow="hidden"
-                    animation={`${slideIn} 0.5s ease-out ${index * 0.1}s both`}>
-                    <Box h="2px" bgGradient={stat.gradient} />
-                    <CardBody p={3}>
-                      <Stat>
-                        <Flex justify="space-between" align="center">
-                          <HStack spacing={2} align="center">
-                            <Box
-                              p={2}
-                              bgGradient={stat.gradient}
-                              color="white"
-                              borderRadius="md"
-                              _hover={{ transform: 'scale(1.1)' }}
-                              transition="all 0.2s">
-                              <Icon as={stat.icon} boxSize={3} />
-                            </Box>
-                            <VStack spacing={0} align="start">
-                              <StatLabel color="gray.600" fontSize="xs" fontWeight="medium">
-                                {stat.label}
-                              </StatLabel>
-                              <StatNumber color="gray.800" fontSize="lg" fontWeight="black">
-                                {stat.number}
-                              </StatNumber>
-                              <StatHelpText color="gray.500" fontSize="xs" mb={0}>
-                                {stat.helpText}
-                              </StatHelpText>
-                            </VStack>
-                          </HStack>
-                        </Flex>
-                      </Stat>
-                    </CardBody>
-                  </Card>
-                ))}
-              </VStack>
-
-              <Divider />
-
-              {/* Area Section */}
-              <VStack spacing={3} align="stretch">
-                <Text fontSize="sm" fontWeight="semibold" color="gray.700">
-                  Area
-                </Text>
-
-                {/* slider for blok opacity */}
-                <Slider
-                  aria-label="slider-ex-1"
-                  value={blokOpacity}
-                  onChange={(value) => setBlokOpacity(value)}
-                  min={0}
-                  max={0.5}
-                  step={0.02}>
-                  <SliderTrack>
-                    <SliderFilledTrack />
-                  </SliderTrack>
-                  <SliderThumb />
-                </Slider>
-
-                {/* Regional Select */}
-                <FormControl>
-                  <Select
-                    value={selectedRegionalId}
-                    onChange={(e) => setSelectedRegionalId(e.target.value)}
-                    size="sm"
-                    borderRadius="lg"
-                    disabled={isLoadingRegionals}
-                    placeholder="Select Regional">
-                    {dataRegional.map((regional: any) => (
-                      <option key={regional.id} value={regional.id.toString()}>
-                        {regional.nama}
-                      </option>
-                    ))}
-                  </Select>
-                </FormControl>
-
-                {/* Wilayah Select */}
-                <FormControl>
-                  <Select
-                    value={selectedWilayahId}
-                    onChange={(e) => setSelectedWilayahId(e.target.value)}
-                    size="sm"
-                    borderRadius="lg"
-                    disabled={isLoadingWilayahs || isLoadingRegionals}
-                    placeholder="Select Wilayah">
-                    {dataWilayah.map((wilayah: any) => (
-                      <option key={wilayah.id} value={wilayah.id.toString()}>
-                        {wilayah.nama}
-                      </option>
-                    ))}
-                  </Select>
-                </FormControl>
-
-                {/* Estate Select */}
-                <FormControl>
-                  <Select
-                    value={selectedEstateId}
-                    onChange={(e) => setSelectedEstateId(e.target.value)}
-                    size="sm"
-                    borderRadius="lg"
-                    disabled={isLoadingEstates || isLoadingWilayahs || isLoadingRegionals}
-                    placeholder="Select Estate">
-                    {dataEstate.map((estate: any) => (
-                      <option key={estate.id} value={estate.id.toString()}>
-                        {estate.nama}
-                      </option>
-                    ))}
-                  </Select>
-                </FormControl>
-
-                {/* Afdeling Select */}
-                <FormControl>
-                  <Select
-                    value={selectedAfdelingId}
-                    onChange={(e) => setSelectedAfdelingId(e.target.value)}
-                    size="sm"
-                    borderRadius="lg"
-                    disabled={
-                      isLoadingAfdelings ||
-                      isLoadingEstates ||
-                      isLoadingWilayahs ||
-                      isLoadingRegionals
-                    }
-                    placeholder="Select Afdeling">
-                    {dataAfdeling.map((afdeling: any) => (
-                      <option key={afdeling.id} value={afdeling.id.toString()}>
-                        {afdeling.nama}
-                      </option>
-                    ))}
-                  </Select>
-                </FormControl>
-              </VStack>
-
-              <Divider />
-              {/* input number for nearby distance */}
-              <Text fontSize="xs" color="gray.500">
-                Nearby Distance (meter)
-              </Text>
-              <Input
-                type="number"
-                min={1}
-                value={String(tempNearbyDistance)}
-                onChange={(e) => setTempNearbyDistance(Number(e.target.value))}
-                size="sm"
-                borderRadius="lg"
-              />
-
-              <Divider />
-
-              {/* Filters Section */}
-              <VStack spacing={4} align="stretch">
-                <Text fontSize="sm" fontWeight="semibold" color="gray.700">
-                  Data Filters
-                </Text>
-
-                <FormControl>
-                  <FormLabel fontSize="sm" color="gray.700" fontWeight="semibold">
-                    <HStack spacing={2}>
-                      <Icon as={FiCalendar} boxSize={4} color="blue.500" />
-                      <Text fontSize="sm" color="gray.700" fontWeight="semibold">
-                        Start Date
-                      </Text>
-                    </HStack>
-                  </FormLabel>
-                  <Input
-                    type="datetime-local"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    size="sm"
-                    borderRadius="lg"
-                    borderColor="gray.300"
-                    _focus={{ borderColor: 'blue.500', boxShadow: '0 0 0 1px blue.500' }}
-                    bg="white"
-                    color="gray.800"
-                    _placeholder={{ color: 'gray.400' }}
-                  />
-                </FormControl>
-
-                <FormControl>
-                  <FormLabel fontSize="sm" color="gray.700" fontWeight="semibold">
-                    <HStack spacing={2}>
-                      <Icon as={FiCalendar} boxSize={4} color="blue.500" />
-                      <Text fontSize="sm" color="gray.700" fontWeight="semibold">
-                        End Date
-                      </Text>
-                    </HStack>
-                  </FormLabel>
-                  <Input
-                    type="datetime-local"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    size="sm"
-                    borderRadius="lg"
-                    borderColor="gray.300"
-                    _focus={{ borderColor: 'blue.500', boxShadow: '0 0 0 1px blue.500' }}
-                    bg="white"
-                    color="gray.800"
-                    _placeholder={{ color: 'gray.400' }}
-                  />
-                </FormControl>
-
-                <FormControl>
-                  <FormLabel fontSize="sm" color="gray.700" fontWeight="semibold">
-                    <HStack spacing={2}>
-                      <Icon as={FiUser} boxSize={4} color="blue.500" />
-                      <Text fontSize="sm" color="gray.700" fontWeight="semibold">
-                        User
-                      </Text>
-                    </HStack>
-                  </FormLabel>
-                  <Select
-                    value={selectedUserId}
-                    onChange={(e) => setSelectedUserId(e.target.value)}
-                    size="sm"
-                    borderRadius="lg"
-                    placeholder="All Users"
-                    borderColor="gray.300"
-                    _focus={{ borderColor: 'blue.500', boxShadow: '0 0 0 1px blue.500' }}
-                    bg="white"
-                    color="gray.800"
-                    _placeholder={{ color: 'gray.400' }}>
-                    {usersResponse?.data?.map((user) => (
-                      <option key={user.id} value={user.id.toString()}>
-                        {user.nama || user.username || `User ${user.id}`}
-                      </option>
-                    ))}
-                  </Select>
-                </FormControl>
-
-                <HStack justify="center" pt={2}>
-                  <Button
-                    colorScheme="blue"
-                    leftIcon={<FiFilter />}
-                    onClick={handleFilterChange}
-                    size="md"
-                    borderRadius="xl"
-                    fontWeight="semibold"
-                    w="full">
-                    Apply Filters
-                  </Button>
-                </HStack>
-
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setStartDate('');
-                    setEndDate('');
-                    setSelectedUserId('');
-                    setFilters({ page: '1', limit: '100' });
-                    setHasAppliedFilters(false);
-                  }}
-                  size="md"
-                  borderRadius="xl"
-                  fontWeight="semibold"
-                  borderColor="gray.300"
-                  color="gray.700"
-                  _hover={{ bg: 'gray.50', borderColor: 'gray.400' }}
-                  w="full">
-                  Clear Filters
-                </Button>
-              </VStack>
-            </VStack>
-          </Box>
-        </Box>
-
-        {/* Resize Handle */}
         <Box
-          ref={resizeHandleRef}
-          position="absolute"
-          right={0}
-          top={0}
-          bottom={0}
-          w="6px"
-          bg={isResizing ? 'blue.500' : 'gray.300'}
-          cursor="col-resize"
-          _hover={{
-            bg: 'blue.400',
-            w: '8px',
-            right: '-2px',
-          }}
-          _active={{ bg: 'blue.500' }}
-          onMouseDown={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setIsResizing(true);
-          }}
-          zIndex={31}
-          userSelect="none"
-          style={{ userSelect: 'none' }}
-          transition="all 0.2s ease"
-        />
-
-        {/* Resize Overlay Indicator */}
-        {isResizing && (
-          <Box
-            position="fixed"
+          w={isMobile ? undefined : sidebarWidth}
+          h="full"
+          overflow="hidden"
+          display="flex"
+          flexDirection="column">
+          {/* Header */}
+          <HStack
+            justify="space-between"
+            align="center"
             top={0}
-            left={0}
-            right={0}
-            bottom={0}
-            bg="rgba(0, 0, 0, 0.1)"
-            zIndex={9999}
-            pointerEvents="none"
-            cursor="col-resize"
-          />
-        )}
-      </Box>
-
-      {/* Main Content Area */}
-      <Box
-        position="absolute"
-        left={isSidebarOpen ? sidebarWidth : 0}
-        top={0}
-        right={0}
-        bottom={0}
-        transition="left 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
-        zIndex={1}>
-        {/* Top Header Panel */}
-        <Box position="absolute" top={4} left={4} right={4} zIndex={20} pointerEvents="none">
-          <Flex justify="space-between" align="start">
-            {/* Left side - Toggle Sidebar Button and Brand */}
-            <HStack spacing={3} pointerEvents="auto">
+            zIndex={10}
+            p={4}
+            borderBottomWidth="1px"
+            borderBottomColor="gray.200"
+            bg={bgColor}>
+            <HStack spacing={3}>
               <IconButton
                 aria-label="Toggle sidebar"
-                icon={isSidebarOpen ? <FiChevronLeft /> : <FiMenu />}
+                icon={isSidebarOpen ? <FiChevronDown /> : <FiMenu />}
                 variant="ghost"
                 size="md"
                 onClick={toggleSidebar}
@@ -923,169 +550,497 @@ export const DashboardScreen = () => {
                 _hover={{ bg: 'rgba(255, 255, 255, 0.98)' }}
                 transition="all 0.3s ease"
               />
+              <Box
+                bgGradient="linear(to-r, purple.500, blue.500)"
+                color="white"
+                borderRadius="lg"
+                animation={`${pulse} 3s infinite`}>
+                <Icon as={FiActivity} boxSize={5} />
+              </Box>
+              <VStack spacing={0} align="start">
+                <Text fontSize="md" color="gray.800" fontWeight="black">
+                  CBI Work Area Plus
+                </Text>
+                <Text fontSize="xs" color="gray.500">
+                  Quality Control Worker Analytics
+                </Text>
+              </VStack>
+            </HStack>
+          </HStack>
+          {/* Scrollable Content Container */}
+          <Collapse in={isSidebarOpen} animateOpacity>
+            <Box
+              flex="1"
+              overflowY="auto"
+              h="full"
+              overflowX="hidden"
+              css={{
+                '&::-webkit-scrollbar': {
+                  width: '6px',
+                },
+                '&::-webkit-scrollbar-track': {
+                  background: 'transparent',
+                },
+                '&::-webkit-scrollbar-thumb': {
+                  background: '#CBD5E0',
+                  borderRadius: '3px',
+                },
+                '&::-webkit-scrollbar-thumb:hover': {
+                  background: '#A0AEC0',
+                },
+              }}>
+              <VStack align="stretch" p={4} spacing={4}>
+                {/* Stats Section */}
+                <VStack spacing={3} align="stretch">
+                  <Text fontSize="sm" fontWeight="semibold" color="gray.700">
+                    Statistics
+                  </Text>
+                  {stats.map((stat, index) => (
+                    <Card
+                      key={index}
+                      shadow="md"
+                      border="1px solid"
+                      borderColor={borderColor}
+                      _hover={{
+                        shadow: 'lg',
+                        transform: 'translateY(-2px)',
+                        borderColor: `${stat.color}.200`,
+                      }}
+                      transition="all 0.3s"
+                      borderRadius="lg"
+                      overflow="hidden"
+                      animation={`${slideIn} 0.5s ease-out ${index * 0.1}s both`}>
+                      <Box h="2px" bgGradient={stat.gradient} />
+                      <CardBody p={3}>
+                        <Stat>
+                          <Flex justify="space-between" align="center">
+                            <HStack spacing={2} align="center">
+                              <Box
+                                p={2}
+                                bgGradient={stat.gradient}
+                                color="white"
+                                borderRadius="md"
+                                _hover={{ transform: 'scale(1.1)' }}
+                                transition="all 0.2s">
+                                <Icon as={stat.icon} boxSize={3} />
+                              </Box>
+                              <VStack spacing={0} align="start">
+                                <StatLabel color="gray.600" fontSize="xs" fontWeight="medium">
+                                  {stat.label}
+                                </StatLabel>
+                                <StatNumber color="gray.800" fontSize="lg" fontWeight="black">
+                                  {stat.number}
+                                </StatNumber>
+                                <StatHelpText color="gray.500" fontSize="xs" mb={0}>
+                                  {stat.helpText}
+                                </StatHelpText>
+                              </VStack>
+                            </HStack>
+                          </Flex>
+                        </Stat>
+                      </CardBody>
+                    </Card>
+                  ))}
+                </VStack>
 
-              <Card
+                <Divider />
+
+                {/* Area Section */}
+                <VStack spacing={3} align="stretch">
+                  <Text fontSize="sm" fontWeight="semibold" color="gray.700">
+                    Area
+                  </Text>
+
+                  {/* slider for blok opacity */}
+                  <Slider
+                    aria-label="slider-ex-1"
+                    value={blokOpacity}
+                    onChange={(value) => setBlokOpacity(value)}
+                    min={0}
+                    max={0.5}
+                    step={0.02}>
+                    <SliderTrack>
+                      <SliderFilledTrack />
+                    </SliderTrack>
+                    <SliderThumb />
+                  </Slider>
+
+                  {/* Regional Select */}
+                  <FormControl>
+                    <Select
+                      value={selectedRegionalId}
+                      onChange={(e) => setSelectedRegionalId(e.target.value)}
+                      size="sm"
+                      borderRadius="lg"
+                      disabled={isLoadingRegionals}
+                      placeholder="Select Regional">
+                      {dataRegional.map((regional: any) => (
+                        <option key={regional.id} value={regional.id.toString()}>
+                          {regional.nama}
+                        </option>
+                      ))}
+                    </Select>
+                  </FormControl>
+
+                  {/* Wilayah Select */}
+                  <FormControl>
+                    <Select
+                      value={selectedWilayahId}
+                      onChange={(e) => setSelectedWilayahId(e.target.value)}
+                      size="sm"
+                      borderRadius="lg"
+                      disabled={isLoadingWilayahs || isLoadingRegionals}
+                      placeholder="Select Wilayah">
+                      {dataWilayah.map((wilayah: any) => (
+                        <option key={wilayah.id} value={wilayah.id.toString()}>
+                          {wilayah.nama}
+                        </option>
+                      ))}
+                    </Select>
+                  </FormControl>
+
+                  {/* Estate Select */}
+                  <FormControl>
+                    <Select
+                      value={selectedEstateId}
+                      onChange={(e) => setSelectedEstateId(e.target.value)}
+                      size="sm"
+                      borderRadius="lg"
+                      disabled={isLoadingEstates || isLoadingWilayahs || isLoadingRegionals}
+                      placeholder="Select Estate">
+                      {dataEstate.map((estate: any) => (
+                        <option key={estate.id} value={estate.id.toString()}>
+                          {estate.nama}
+                        </option>
+                      ))}
+                    </Select>
+                  </FormControl>
+
+                  {/* Afdeling Select */}
+                  <FormControl>
+                    <Select
+                      value={selectedAfdelingId}
+                      onChange={(e) => setSelectedAfdelingId(e.target.value)}
+                      size="sm"
+                      borderRadius="lg"
+                      disabled={
+                        isLoadingAfdelings ||
+                        isLoadingEstates ||
+                        isLoadingWilayahs ||
+                        isLoadingRegionals
+                      }
+                      placeholder="Select Afdeling">
+                      {dataAfdeling.map((afdeling: any) => (
+                        <option key={afdeling.id} value={afdeling.id.toString()}>
+                          {afdeling.nama}
+                        </option>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </VStack>
+
+                <Divider />
+                {/* input number for nearby distance */}
+                <Text fontSize="xs" color="gray.500">
+                  Nearby Distance (meter)
+                </Text>
+                <Input
+                  type="number"
+                  min={1}
+                  value={String(tempNearbyDistance)}
+                  onChange={(e) => setTempNearbyDistance(Number(e.target.value))}
+                  size="sm"
+                  borderRadius="lg"
+                />
+
+                <Divider />
+
+                {/* Filters Section */}
+                <VStack spacing={4} align="stretch">
+                  <Text fontSize="sm" fontWeight="semibold" color="gray.700">
+                    Data Filters
+                  </Text>
+
+                  <FormControl>
+                    <FormLabel fontSize="sm" color="gray.700" fontWeight="semibold">
+                      <HStack spacing={2}>
+                        <Icon as={FiCalendar} boxSize={4} color="blue.500" />
+                        <Text fontSize="sm" color="gray.700" fontWeight="semibold">
+                          Start Date
+                        </Text>
+                      </HStack>
+                    </FormLabel>
+                    <Input
+                      type="datetime-local"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      size="sm"
+                      borderRadius="lg"
+                      borderColor="gray.300"
+                      _focus={{ borderColor: 'blue.500', boxShadow: '0 0 0 1px blue.500' }}
+                      bg="white"
+                      color="gray.800"
+                      _placeholder={{ color: 'gray.400' }}
+                    />
+                  </FormControl>
+
+                  <FormControl>
+                    <FormLabel fontSize="sm" color="gray.700" fontWeight="semibold">
+                      <HStack spacing={2}>
+                        <Icon as={FiCalendar} boxSize={4} color="blue.500" />
+                        <Text fontSize="sm" color="gray.700" fontWeight="semibold">
+                          End Date
+                        </Text>
+                      </HStack>
+                    </FormLabel>
+                    <Input
+                      type="datetime-local"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      size="sm"
+                      borderRadius="lg"
+                      borderColor="gray.300"
+                      _focus={{ borderColor: 'blue.500', boxShadow: '0 0 0 1px blue.500' }}
+                      bg="white"
+                      color="gray.800"
+                      _placeholder={{ color: 'gray.400' }}
+                    />
+                  </FormControl>
+
+                  <FormControl>
+                    <FormLabel fontSize="sm" color="gray.700" fontWeight="semibold">
+                      <HStack spacing={2}>
+                        <Icon as={FiUser} boxSize={4} color="blue.500" />
+                        <Text fontSize="sm" color="gray.700" fontWeight="semibold">
+                          User
+                        </Text>
+                      </HStack>
+                    </FormLabel>
+                    <Select
+                      value={selectedUserId}
+                      onChange={(e) => setSelectedUserId(e.target.value)}
+                      size="sm"
+                      borderRadius="lg"
+                      placeholder="All Users"
+                      borderColor="gray.300"
+                      _focus={{ borderColor: 'blue.500', boxShadow: '0 0 0 1px blue.500' }}
+                      bg="white"
+                      color="gray.800"
+                      _placeholder={{ color: 'gray.400' }}>
+                      {usersResponse?.data?.map((user) => (
+                        <option key={user.id} value={user.id.toString()}>
+                          {user.nama || user.username || `User ${user.id}`}
+                        </option>
+                      ))}
+                    </Select>
+                  </FormControl>
+
+                  <HStack justify="center" pt={2}>
+                    <Button
+                      colorScheme="blue"
+                      leftIcon={<FiFilter />}
+                      onClick={handleFilterChange}
+                      size="md"
+                      borderRadius="xl"
+                      fontWeight="semibold"
+                      w="full">
+                      Apply Filters
+                    </Button>
+                  </HStack>
+
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setStartDate('');
+                      setEndDate('');
+                      setSelectedUserId('');
+                      setFilters({ page: '1', limit: '100' });
+                      setHasAppliedFilters(false);
+                    }}
+                    size="md"
+                    borderRadius="xl"
+                    fontWeight="semibold"
+                    borderColor="gray.300"
+                    color="gray.700"
+                    _hover={{ bg: 'gray.50', borderColor: 'gray.400' }}
+                    w="full">
+                    Clear Filters
+                  </Button>
+                </VStack>
+              </VStack>
+            </Box>
+          </Collapse>
+        </Box>
+
+        {/* Resize Handle */}
+        {!isMobile && (
+          <Box
+            ref={resizeHandleRef}
+            position="absolute"
+            right={0}
+            top={0}
+            bottom={0}
+            w="2px"
+            bg={isResizing ? 'blue.500' : 'gray.300'}
+            cursor="col-resize"
+            _hover={{
+              bg: 'blue.400',
+              w: '8px',
+              right: '-2px',
+            }}
+            _active={{ bg: 'blue.500' }}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsResizing(true);
+            }}
+            zIndex={31}
+            userSelect="none"
+            style={{ userSelect: 'none' }}
+            transition="all 0.2s ease"
+          />
+        )}
+      </Box>
+      {/* Top Header Panel */}
+      <Box
+        position="absolute"
+        top={isMobile ? 24 : 4}
+        left={4}
+        right={4}
+        zIndex={20}
+        pointerEvents="none">
+        <Flex justify="space-between" align="start">
+          {/* Left side - Toggle Sidebar Button and Brand */}
+          <HStack spacing={3} pointerEvents="auto" />
+          {/* Right side - Controls */}
+          <HStack spacing={2} pointerEvents="auto">
+            {/* Tile Layer Selector */}
+            <Tooltip label="Map Layers">
+              <IconButton
+                aria-label="Map layers"
+                icon={<FiLayers />}
+                variant="ghost"
+                size="md"
+                onClick={onMapLayersOpen}
                 bg={controlsBg}
                 backdropFilter="blur(10px)"
                 border="1px solid"
                 borderColor={borderColor}
-                borderRadius="xl"
-                shadow="xl"
-                p={3}
-                pointerEvents="auto"
-                animation={`${slideIn} 0.5s ease-out`}>
-                <HStack spacing={3}>
-                  <Box
-                    p={2}
-                    bgGradient="linear(to-r, purple.500, blue.500)"
-                    color="white"
-                    borderRadius="lg"
-                    animation={`${pulse} 3s infinite`}>
-                    <Icon as={FiActivity} boxSize={5} />
-                  </Box>
-                  <VStack spacing={0} align="start">
-                    <Text fontSize="md" color="gray.800" fontWeight="black">
-                      CBI Work Area Plus
+                borderRadius="lg"
+                shadow="lg"
+                _hover={{ bg: 'rgba(255, 255, 255, 0.98)' }}
+              />
+            </Tooltip>
+
+            {/* Refresh Button */}
+            <Tooltip label="Refresh Data">
+              <IconButton
+                aria-label="Refresh data"
+                icon={<FiRefreshCw />}
+                variant="ghost"
+                size="md"
+                isLoading={refreshing}
+                onClick={handleRefresh}
+                bg={controlsBg}
+                backdropFilter="blur(10px)"
+                border="1px solid"
+                borderColor={borderColor}
+                borderRadius="lg"
+                shadow="lg"
+                _hover={{ bg: 'rgba(255, 255, 255, 0.98)' }}
+              />
+            </Tooltip>
+
+            {/* Fullscreen Button */}
+            <Tooltip label={isFullScreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}>
+              <IconButton
+                aria-label={isFullScreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+                icon={isFullScreen ? <FiMinimize /> : <FiMaximize />}
+                onClick={handleFullScreen}
+                size="md"
+                bgGradient="linear(to-r, purple.500, blue.500)"
+                color="white"
+                _hover={{
+                  bgGradient: 'linear(to-r, purple.600, blue.600)',
+                  transform: 'scale(1.05)',
+                }}
+                borderRadius="lg"
+                shadow="lg"
+                animation={`${float} 3s ease-in-out infinite`}
+              />
+            </Tooltip>
+
+            {/* User Menu */}
+            <Menu>
+              <MenuButton as={Button} bg={controlsBg} variant="ghost" size="md">
+                <HStack spacing={2}>
+                  <Avatar size="sm" name={user?.username} bg="purple.500" />
+                  <VStack spacing={0} align="start" display={{ base: 'none', sm: 'flex' }}>
+                    <Text fontSize="xs" fontWeight="semibold">
+                      {user?.username}
                     </Text>
-                    <Text fontSize="xs" color="gray.500">
-                      Quality Control Worker Analytics
+                    <Text fontSize="2xs" color="gray.500">
+                      {user?.nama}
                     </Text>
                   </VStack>
                 </HStack>
-              </Card>
-            </HStack>
-
-            {/* Right side - Controls */}
-            <HStack spacing={2} pointerEvents="auto">
-              {/* Tile Layer Selector */}
-              <Tooltip label="Map Layers">
-                <IconButton
-                  aria-label="Map layers"
-                  icon={<FiLayers />}
-                  variant="ghost"
-                  size="md"
-                  onClick={onMapLayersOpen}
-                  bg={controlsBg}
-                  backdropFilter="blur(10px)"
-                  border="1px solid"
-                  borderColor={borderColor}
-                  borderRadius="lg"
-                  shadow="lg"
-                  _hover={{ bg: 'rgba(255, 255, 255, 0.98)' }}
-                />
-              </Tooltip>
-
-              {/* Refresh Button */}
-              <Tooltip label="Refresh Data">
-                <IconButton
-                  aria-label="Refresh data"
-                  icon={<FiRefreshCw />}
-                  variant="ghost"
-                  size="md"
-                  isLoading={refreshing}
-                  onClick={handleRefresh}
-                  bg={controlsBg}
-                  backdropFilter="blur(10px)"
-                  border="1px solid"
-                  borderColor={borderColor}
-                  borderRadius="lg"
-                  shadow="lg"
-                  _hover={{ bg: 'rgba(255, 255, 255, 0.98)' }}
-                />
-              </Tooltip>
-
-              {/* Fullscreen Button */}
-              <Tooltip label={isFullScreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}>
-                <IconButton
-                  aria-label={isFullScreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
-                  icon={isFullScreen ? <FiMinimize /> : <FiMaximize />}
-                  onClick={handleFullScreen}
-                  size="md"
-                  bgGradient="linear(to-r, purple.500, blue.500)"
-                  color="white"
-                  _hover={{
-                    bgGradient: 'linear(to-r, purple.600, blue.600)',
-                    transform: 'scale(1.05)',
-                  }}
-                  borderRadius="lg"
-                  shadow="lg"
-                  animation={`${float} 3s ease-in-out infinite`}
-                />
-              </Tooltip>
-
-              {/* User Menu */}
-              <Menu>
-                <MenuButton as={Button} bg={controlsBg} variant="ghost" size="md">
-                  <HStack spacing={2}>
-                    <Avatar size="sm" name={user?.username} bg="purple.500" />
-                    <VStack spacing={0} align="start" display={{ base: 'none', sm: 'flex' }}>
-                      <Text fontSize="xs" fontWeight="semibold">
-                        {user?.username}
-                      </Text>
-                      <Text fontSize="2xs" color="gray.500">
-                        {user?.nama}
-                      </Text>
-                    </VStack>
-                  </HStack>
-                </MenuButton>
-                <MenuList>
-                  <MenuItem icon={<FiShield />} onClick={handleLogout} color="red.500">
-                    Logout
-                  </MenuItem>
-                </MenuList>
-              </Menu>
-            </HStack>
-          </Flex>
-        </Box>
-
-        {/* Map Controls */}
-        <MapsHeatmapLayerControl
-          isUsingH3={isUsingH3}
-          showHeatmap={showHeatmap}
-          showClusteredMarkers={showClusteredMarkers}
-          showMarker={showMarker}
-          setShowHeatmap={setShowHeatmap}
-          setShowClusteredMarkers={setShowClusteredMarkers}
-          setShowMarker={setShowMarker}
-        />
-
-        {/* Map Container */}
-        <Box p={0} h="full" pointerEvents={isResizing ? 'none' : 'auto'}>
-          <MapContainer
-            center={mapCenter}
-            zoom={mapZoom}
-            className="w-full h-full z-10"
-            zoomControl={false}
-            scrollWheelZoom={!isResizing}
-            attributionControl={false}>
-            <TileLayer url={selectedMapTile.value} attribution={selectedMapTile.source} />
-            {selectedGeoJsonBlok && (
-              <BloksPolygonLayer blokGeoJSON={selectedGeoJsonBlok} opacity={blokOpacity} />
-            )}
-            <ZoomControls onZoomIn={handleZoomIn} onZoomOut={handleZoomOut} />
-            <ZoomListener onZoomChange={setMapZoom} />
-            {(isUsingH3 || (coordinateHistoryData.length === 0 && isLoadingCoordinateHistory)) && (
-              <HeatmapH3DataProcessor
-                data={coordinateHistoryH3Data}
-                showHeatmap={showHeatmap}
-                showH3Markers={showMarker}
-              />
-            )}
-            {(!isUsingH3 ||
-              (coordinateHistoryH3Data.length === 0 && isLoadingCoordinateHistoryH3)) && (
-              <HeatmapCoordinateDataProcessor
-                data={coordinateHistoryData}
-                showHeatmap={showHeatmap}
-                showClusteredMarkers={showClusteredMarkers}
-                showIndividualMarkers={showMarker}
-                nearbyDistance={nearbyDistance}
-              />
-            )}
-            <MapBoundsListener windowBounds={windowBounds} setWindowBounds={setWindowBounds} />
-          </MapContainer>
-        </Box>
+              </MenuButton>
+              <MenuList>
+                <MenuItem icon={<FiShield />} onClick={handleLogout} color="red.500">
+                  Logout
+                </MenuItem>
+              </MenuList>
+            </Menu>
+          </HStack>
+        </Flex>
       </Box>
 
+      {/* Map Controls */}
+      <MapsHeatmapLayerControl
+        isUsingH3={isUsingH3}
+        showHeatmap={showHeatmap}
+        showClusteredMarkers={showClusteredMarkers}
+        showMarker={showMarker}
+        setShowHeatmap={setShowHeatmap}
+        setShowClusteredMarkers={setShowClusteredMarkers}
+        setShowMarker={setShowMarker}
+      />
+
+      {/* Map Container */}
+      <Box p={0} h="full">
+        <MapContainer
+          center={mapCenter}
+          zoom={mapZoom}
+          className="w-full h-full z-10"
+          zoomControl={false}
+          scrollWheelZoom={!isResizing}
+          attributionControl={false}>
+          <TileLayer url={selectedMapTile.value} attribution={selectedMapTile.source} />
+          {selectedGeoJsonBlok && (
+            <BloksPolygonLayer blokGeoJSON={selectedGeoJsonBlok} opacity={blokOpacity} />
+          )}
+          <ZoomControls onZoomIn={handleZoomIn} onZoomOut={handleZoomOut} />
+          <ZoomListener onZoomChange={setMapZoom} />
+          {(isUsingH3 || (coordinateHistoryData.length === 0 && isLoadingCoordinateHistory)) && (
+            <HeatmapH3DataProcessor
+              data={coordinateHistoryH3Data}
+              showHeatmap={showHeatmap}
+              showH3Markers={showMarker}
+            />
+          )}
+          {(!isUsingH3 ||
+            (coordinateHistoryH3Data.length === 0 && isLoadingCoordinateHistoryH3)) && (
+            <HeatmapCoordinateDataProcessor
+              data={coordinateHistoryData}
+              showHeatmap={showHeatmap}
+              showClusteredMarkers={showClusteredMarkers}
+              showIndividualMarkers={showMarker}
+              nearbyDistance={nearbyDistance}
+            />
+          )}
+          <MapBoundsListener windowBounds={windowBounds} setWindowBounds={setWindowBounds} />
+        </MapContainer>
+      </Box>
       {/* Map Layers Drawer */}
       <Drawer
         isOpen={isMapLayersOpen}

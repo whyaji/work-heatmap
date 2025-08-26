@@ -9,7 +9,7 @@ import env from '../env';
 
 const cmpGetDataApiUrl = env.CMP_API_URL + '/cmpmain/getData';
 
-export const remapKeyResponse = (data: any) => {
+export const remapKeyResponse = (data: any): { data: any[]; total: number } => {
   return {
     data: data.data,
     total: data.count,

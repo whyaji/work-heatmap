@@ -13,9 +13,9 @@ export const heatmapConfig = {
   radius: 30,
   // Gradasi warna dari hijau muda ke merah
   gradient: {
-    0.0: 'rgba(0, 255, 0, 0.8)', // Hijau terang dengan transparansi 80% (tidak terlihat)
-    0.2: 'rgba(128, 255, 0, 0.85)', // Hijau-kuning dengan transparansi 85% (minimal 1 tetangga)
-    0.4: 'rgba(255, 255, 0, 0.9)', // Kuning dengan transparansi 90% (2-3 tetangga)
+    0.0: 'rgba(0, 255, 0, 0.9)', // Hijau terang dengan transparansi 80% (tidak terlihat)
+    0.2: 'rgba(128, 255, 0, 0.95)', // Hijau-kuning dengan transparansi 85% (minimal 1 tetangga)
+    0.4: 'rgba(255, 255, 0, 0.95)', // Kuning dengan transparansi 90% (2-3 tetangga)
     0.6: 'rgba(255, 128, 0, 0.95)', // Orange dengan transparansi 95% (4-5 tetangga)
     0.8: 'rgba(255, 64, 0, 1)', // Orange-merah opaque (6+ tetangga)
     1.0: 'rgba(255, 0, 0, 1)', // Merah opaque (banyak tetangga)

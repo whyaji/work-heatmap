@@ -29,9 +29,13 @@ export const errorHandler = async (c: Context, next: Next) => {
 };
 
 // Service response handler middleware
-export const handleServiceResponse = (serviceResponse: AreaServiceResponse) => {
+export const handleServiceResponse = <T>(serviceResponse: AreaServiceResponse<T>) => {
   return (c: Context) => {
-    if (serviceResponse.success) {
+    if (
+      serviceResponse.success &&
+      serviceResponse.data !== null &&
+      serviceResponse.data !== undefined
+    ) {
       return c.json(serviceResponse.data, serviceResponse.status as ContentfulStatusCode);
     } else {
       const errorResponse: ErrorResponse = {
