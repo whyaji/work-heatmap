@@ -8,7 +8,7 @@ import L from 'leaflet';
 
 const HeatmapLayer = HeatmapLayerFactory<[number, number, number]>();
 
-const heatmapConfig = {
+export const heatmapConfig = {
   // Radius untuk setiap titik heatmap
   radius: 30,
   // Gradasi warna dari hijau muda ke merah

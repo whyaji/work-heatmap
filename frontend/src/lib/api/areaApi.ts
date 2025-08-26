@@ -34,11 +34,11 @@ export const getEstatesAfdeling = async (estateId: string) => {
   return response.json();
 };
 
-export const getGeoJsonBlok = async (estateId: string, afdelingId: string) => {
+export const getGeoJsonBlok = async (estateId: string, afdelingId: string | null) => {
   const response = await areaApi['geo-json-blok'].$get({
     query: {
       estate: estateId,
-      afdeling: afdelingId,
+      ...(afdelingId && { afdeling: afdelingId }),
     },
   });
   return response.json();

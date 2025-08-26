@@ -279,7 +279,7 @@ export const DashboardScreen = () => {
   } = useQuery({
     queryKey: ['geoJsonBlok', selectedEstateId, selectedAfdelingId],
     queryFn: () => getGeoJsonBlok(selectedEstateAbbr, selectedAfdelingShortName),
-    enabled: selectedEstateAbbr !== null && selectedAfdelingShortName !== null,
+    enabled: selectedEstateAbbr !== null,
   });
 
   useEffect(() => {

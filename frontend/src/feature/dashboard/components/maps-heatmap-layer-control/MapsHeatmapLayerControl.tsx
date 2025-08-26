@@ -13,7 +13,17 @@ import {
   useDisclosure,
 } from '@chakra-ui/react';
 import { FC } from 'react';
-import { FiMap, FiLayers, FiGrid, FiChevronUp, FiChevronDown, FiEye } from 'react-icons/fi';
+import { FiMap, FiLayers, FiGrid, FiChevronUp, FiEye } from 'react-icons/fi';
+import { heatmapConfig } from '../maps-heatmap/MapsHeatmaps';
+
+// gradient: {
+//   0.0: 'rgba(0, 255, 0, 0.8)', // Hijau terang dengan transparansi 80% (tidak terlihat)
+//   0.2: 'rgba(128, 255, 0, 0.85)', // Hijau-kuning dengan transparansi 85% (minimal 1 tetangga)
+//   0.4: 'rgba(255, 255, 0, 0.9)', // Kuning dengan transparansi 90% (2-3 tetangga)
+//   0.6: 'rgba(255, 128, 0, 0.95)', // Orange dengan transparansi 95% (4-5 tetangga)
+//   0.8: 'rgba(255, 64, 0, 1)', // Orange-merah opaque (6+ tetangga)
+//   1.0: 'rgba(255, 0, 0, 1)', // Merah opaque (banyak tetangga)
+// },
 
 export const MapsHeatmapLayerControl: FC<{
   isUsingH3: boolean;
@@ -51,6 +61,39 @@ export const MapsHeatmapLayerControl: FC<{
   const activeLayers = [showHeatmap, showClusteredMarkers && !isUsingH3, showMarker].filter(
     Boolean
   ).length;
+
+  const heatmapGradient = heatmapConfig.gradient;
+
+  // Convert gradient object to sorted array
+  const gradientEntries = Object.entries(heatmapGradient).sort(
+    (a, b) => Number(a[0]) - Number(b[0])
+  );
+
+  // Create ranges based on gradient stops
+  const createRanges = () => {
+    const ranges = [];
+
+    for (let i = 0; i < gradientEntries.length - 1; i++) {
+      const currentStop = gradientEntries[i];
+      const nextStop = gradientEntries[i + 1];
+
+      ranges.push({
+        start: Number(currentStop[0]),
+        end: Number(nextStop[0]),
+        color: currentStop[1],
+        endColor: nextStop[1],
+      });
+    }
+
+    return ranges;
+  };
+
+  const ranges = createRanges();
+
+  // Create gradient background for range
+  const createGradientBackground = (startColor: string, endColor: string) => {
+    return `linear-gradient(to right, ${startColor}, ${endColor})`;
+  };
 
   if (isMobile) {
     return (
@@ -99,7 +142,7 @@ export const MapsHeatmapLayerControl: FC<{
               </Badge>
             </HStack>
             <Icon
-              as={isOpen ? FiChevronDown : FiChevronUp}
+              as={FiChevronUp}
               color={textColor}
               transition="transform 0.2s"
               transform={isOpen ? 'rotate(0deg)' : 'rotate(180deg)'}
@@ -226,7 +269,7 @@ export const MapsHeatmapLayerControl: FC<{
   }
 
   return (
-    <Box position="absolute" bottom={6} right={6} zIndex={20} pointerEvents="auto">
+    <Box position="absolute" bottom={6} right={6} zIndex={20} pointerEvents="auto" minWidth="250px">
       <VStack
         spacing={0}
         bg={bgColor}
@@ -235,7 +278,7 @@ export const MapsHeatmapLayerControl: FC<{
         borderColor={borderColor}
         boxShadow="lg"
         overflow="hidden"
-        minWidth="220px">
+        minWidth="280px">
         {/* Header with toggle and badge */}
         <HStack
           w="100%"
@@ -264,9 +307,9 @@ export const MapsHeatmapLayerControl: FC<{
             </Badge>
           </HStack>
           <Icon
-            as={isOpen ? FiChevronDown : FiChevronUp}
+            as={FiChevronUp}
             color={textColor}
-            transition="transform 0.2s"
+            transition="transform 0.3s"
             transform={isOpen ? 'rotate(0deg)' : 'rotate(180deg)'}
             boxSize={4}
           />
@@ -389,6 +432,56 @@ export const MapsHeatmapLayerControl: FC<{
                 )}
               </Button>
             </Tooltip>
+
+            <Box w="100%">
+              <Tooltip label="Heatmap gradient info" placement="left">
+                <VStack spacing={2} style={{ width: '100%' }}>
+                  <HStack spacing={1} w="100%">
+                    {/* Range 1: 0.0 - 0.4 */}
+                    <VStack spacing={1} flex="1">
+                      <Box
+                        w="100%"
+                        h="20px"
+                        background={`linear-gradient(to right, ${heatmapGradient['0']}, ${heatmapGradient['0.4']})`}
+                        borderRadius="4px"
+                        border="1px solid rgba(0,0,0,0.1)"
+                      />
+                      <Text fontSize="xs" color={textColor} fontWeight="500">
+                        0.0 - 0.4
+                      </Text>
+                    </VStack>
+
+                    {/* Range 2: 0.4 - 0.6 */}
+                    <VStack spacing={1} flex="1">
+                      <Box
+                        w="100%"
+                        h="20px"
+                        background={`linear-gradient(to right, ${heatmapGradient['0.4']}, ${heatmapGradient['0.6']})`}
+                        borderRadius="4px"
+                        border="1px solid rgba(0,0,0,0.1)"
+                      />
+                      <Text fontSize="xs" color={textColor} fontWeight="500">
+                        0.4 - 0.6
+                      </Text>
+                    </VStack>
+
+                    {/* Range 3: 0.6 - 1.0 */}
+                    <VStack spacing={1} flex="1">
+                      <Box
+                        w="100%"
+                        h="20px"
+                        background={`linear-gradient(to right, ${heatmapGradient['0.6']}, ${heatmapGradient['1']})`}
+                        borderRadius="4px"
+                        border="1px solid rgba(0,0,0,0.1)"
+                      />
+                      <Text fontSize="xs" color={textColor} fontWeight="500">
+                        0.6 - 1.0
+                      </Text>
+                    </VStack>
+                  </HStack>
+                </VStack>
+              </Tooltip>
+            </Box>
           </VStack>
         </Collapse>
       </VStack>

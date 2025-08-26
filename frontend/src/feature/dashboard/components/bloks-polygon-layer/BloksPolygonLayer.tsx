@@ -50,11 +50,48 @@ const calculateBounds = (blokGeoJSON: BlokGeoJSON): LatLngBounds | null => {
   return new LatLngBounds([minLat, minLng], [maxLat, maxLng]);
 };
 
+// Calculate center for grouped polygons by estate or afdeling
+const calculateGroupCenter = (
+  blokGeoJSON: BlokGeoJSON,
+  groupBy: 'estate' | 'afdeling'
+): Map<string, LatLngTuple> => {
+  const groupCenters = new Map<string, LatLngTuple>();
+  const groupCoordinates = new Map<string, LatLngTuple[]>();
+
+  blokGeoJSON.features.forEach((feature) => {
+    const geoJsonCoords = feature.geometry.coordinates[0];
+    if (isValidPolygon(geoJsonCoords)) {
+      const leafletCoords = convertGeoJSONToLeaflet(geoJsonCoords);
+      const groupName = feature.properties[groupBy];
+
+      if (!groupCoordinates.has(groupName)) {
+        groupCoordinates.set(groupName, []);
+      }
+
+      // Add all coordinates from this polygon to the group
+      groupCoordinates.get(groupName)!.push(...leafletCoords);
+    }
+  });
+
+  // Calculate center for each group
+  groupCoordinates.forEach((coordinates, groupName) => {
+    if (coordinates.length > 0) {
+      const sumLat = coordinates.reduce((sum, coord) => sum + coord[0], 0);
+      const sumLng = coordinates.reduce((sum, coord) => sum + coord[1], 0);
+      const center: LatLngTuple = [sumLat / coordinates.length, sumLng / coordinates.length];
+      groupCenters.set(groupName, center);
+    }
+  });
+
+  return groupCenters;
+};
+
 export const BloksPolygonLayer: FC<{ blokGeoJSON: BlokGeoJSON; opacity: number }> = ({
   blokGeoJSON,
   opacity,
 }) => {
   const map = useMap();
+  const zoom = map.getZoom();
 
   useEffect(() => {
     // Fit map bounds to show all polygons
@@ -67,6 +104,10 @@ export const BloksPolygonLayer: FC<{ blokGeoJSON: BlokGeoJSON; opacity: number }
       });
     }
   }, [blokGeoJSON, map]);
+
+  // Calculate group centers for estate and afdeling
+  const estateCenters = calculateGroupCenter(blokGeoJSON, 'estate');
+  const afdelingCenters = calculateGroupCenter(blokGeoJSON, 'afdeling');
 
   return (
     <>
@@ -87,25 +128,54 @@ export const BloksPolygonLayer: FC<{ blokGeoJSON: BlokGeoJSON; opacity: number }
         // Calculate center of polygon for text label
         const centerCoords = calculatePolygonCenter(leafletCoords);
 
-        // Create custom icon for text label
-        const textIcon = new DivIcon({
-          html: `<div style="
-            background: transparent;
-            border: none;
-            font-size: 12px;
-            font-weight: bold;
-            color: #1e40af;
-            text-shadow: 1px 1px 2px white, -1px -1px 2px white, 1px -1px 2px white, -1px 1px 2px white;
-            pointer-events: none;
-            user-select: none;
-            text-align: center;
-            white-space: nowrap;
-            opacity: ${opacity};
-          ">${feature.properties.block}</div>`,
-          className: 'polygon-label',
-          iconSize: [100, 20],
-          iconAnchor: [50, 10],
-        });
+        // Create custom icon for text label based on zoom level
+        const getTextIcon = (zoom: number) => {
+          let text = '';
+          let fontSize = '12px';
+          let labelCenter: LatLngTuple | null = null;
+
+          if (zoom > 13) {
+            text = feature.properties.block;
+            fontSize = '12px';
+            labelCenter = centerCoords; // Use individual polygon center for blocks
+          } else if (zoom > 11) {
+            text = feature.properties.afdeling;
+            fontSize = '14px';
+            labelCenter = afdelingCenters.get(feature.properties.afdeling) || null;
+          } else if (zoom > 9) {
+            text = feature.properties.estate;
+            fontSize = '16px';
+            labelCenter = estateCenters.get(feature.properties.estate) || null;
+          }
+
+          if (!text || !labelCenter) return null;
+
+          return new DivIcon({
+            html: `<div style="
+              background: transparent;
+              border: none;
+              font-size: ${fontSize};
+              font-weight: bold;
+              color:rgb(0, 0, 0);
+              text-shadow: 1px 1px 2px white, -1px -1px 2px white, 1px -1px 2px white, -1px 1px 2px white;
+              pointer-events: none;
+              user-select: none;
+              text-align: center;
+              white-space: nowrap;
+            ">${text}</div>`,
+            className: 'polygon-label',
+            iconSize: [100, 20],
+            iconAnchor: [50, 10],
+          });
+        };
+
+        const textIcon = getTextIcon(zoom);
+        const labelCenter =
+          zoom > 13
+            ? centerCoords
+            : zoom > 11
+              ? afdelingCenters.get(feature.properties.afdeling) || centerCoords
+              : estateCenters.get(feature.properties.estate) || centerCoords;
 
         return (
           <div key={`polygon-${index}`}>
@@ -120,7 +190,7 @@ export const BloksPolygonLayer: FC<{ blokGeoJSON: BlokGeoJSON; opacity: number }
                 fillOpacity: opacity,
               }}
             />
-            <Marker position={centerCoords} icon={textIcon} interactive={false} />
+            {textIcon && <Marker position={labelCenter} icon={textIcon} interactive={false} />}
           </div>
         );
       })}
