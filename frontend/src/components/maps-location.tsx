@@ -83,9 +83,9 @@ export function ZoomListener({ onZoomChange }: { onZoomChange: (zoom: number) =>
 }
 
 export function MapBoundsListener({
-  windowBounds: windowBoundsProp,
   setWindowBounds,
-  debounceTime = 800,
+  debounceTime = 1000,
+  onWindowBoundsChange,
 }: {
   windowBounds: {
     north: number;
@@ -102,10 +102,9 @@ export function MapBoundsListener({
     } | null>
   >;
   debounceTime?: number;
+  onWindowBoundsChange?: () => void;
 }) {
   const timeoutRef = useRef<Timer | null>(null);
-  const map = useMap();
-
   const debouncedSetBounds = useCallback(
     (windowBounds: { north: number; south: number; east: number; west: number }) => {
       // Clear timeout sebelumnya jika ada
@@ -116,25 +115,11 @@ export function MapBoundsListener({
       // Set timeout baru
       timeoutRef.current = setTimeout(() => {
         setWindowBounds(windowBounds);
+        onWindowBoundsChange?.();
       }, debounceTime);
     },
     [setWindowBounds, debounceTime]
   );
-
-  useEffect(() => {
-    if (windowBoundsProp === null) {
-      const bounds = map.getBounds();
-
-      const windowBounds = {
-        north: bounds.getNorthEast().lat,
-        south: bounds.getSouthWest().lat,
-        east: bounds.getNorthEast().lng,
-        west: bounds.getSouthWest().lng,
-      };
-
-      debouncedSetBounds(windowBounds);
-    }
-  }, [windowBoundsProp]);
 
   useMapEvents({
     moveend: (e) => {

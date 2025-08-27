@@ -49,8 +49,8 @@ export const listMapTileOptions: MapTileOption[] = [
 ];
 
 export const MapsHeatmapLayerControl: FC<{
-  areaOpacity: number;
-  setAreaOpacity: (opacity: number) => void;
+  areaOpacity?: number;
+  setAreaOpacity?: (opacity: number) => void;
   selectedMapTileIndex: number;
   setSelectedMapTileIndex: (index: number) => void;
   isUsingH3: boolean;
@@ -284,37 +284,40 @@ export const MapsHeatmapLayerControl: FC<{
             <Box w="100%" h="1px" bg={borderColor} opacity={0.5} />
 
             {/* Area Opacity Slider*/}
-            <Box w="100%">
-              <HStack justify="space-between" mb={2}>
-                <Text fontSize="xs" fontWeight="600" color={textColor}>
-                  Area Opacity
-                </Text>
-                <Text fontSize="xs" color="blue.500" fontWeight="500">
-                  {(areaOpacity * 100).toFixed(0)}%
-                </Text>
-              </HStack>
-              <Slider
-                value={areaOpacity}
-                onChange={setAreaOpacity}
-                min={0}
-                max={1}
-                step={0.02}
-                size="sm"
-                colorScheme="blue">
-                <SliderTrack bg={borderColor}>
-                  <SliderFilledTrack bg="blue.500" />
-                </SliderTrack>
-                <SliderThumb
-                  boxSize={4}
-                  bg="blue.500"
-                  _hover={{ bg: 'blue.600' }}
-                  _active={{ bg: 'blue.700' }}
-                />
-              </Slider>
-            </Box>
-
-            {/* Divider */}
-            <Box w="100%" h="1px" bg={borderColor} opacity={0.5} />
+            {areaOpacity && setAreaOpacity && (
+              <>
+                <Box w="100%">
+                  <HStack justify="space-between" mb={2}>
+                    <Text fontSize="xs" fontWeight="600" color={textColor}>
+                      Area Opacity
+                    </Text>
+                    <Text fontSize="xs" color="blue.500" fontWeight="500">
+                      {(areaOpacity * 100).toFixed(0)}%
+                    </Text>
+                  </HStack>
+                  <Slider
+                    value={areaOpacity}
+                    onChange={setAreaOpacity}
+                    min={0}
+                    max={1}
+                    step={0.02}
+                    size="sm"
+                    colorScheme="blue">
+                    <SliderTrack bg={borderColor}>
+                      <SliderFilledTrack bg="blue.500" />
+                    </SliderTrack>
+                    <SliderThumb
+                      boxSize={4}
+                      bg="blue.500"
+                      _hover={{ bg: 'blue.600' }}
+                      _active={{ bg: 'blue.700' }}
+                    />
+                  </Slider>
+                </Box>
+                {/* Divider */}
+                <Box w="100%" h="1px" bg={borderColor} opacity={0.5} />
+              </>
+            )}
 
             {/* Heatmap */}
             <Tooltip label="Toggle heatmap visualization" placement="left">
@@ -430,7 +433,7 @@ export const MapsHeatmapLayerControl: FC<{
             <Tooltip label="Heatmap gradient info" placement="left" w="100%">
               <HStack spacing={1} w="100%">
                 {ranges.map((range) => (
-                  <VStack spacing={1} flex="1">
+                  <VStack spacing={1} flex="1" key={range.legend}>
                     <Box w="100%" h="10px" background={range.background} borderRadius="4px" />
                     <Text fontSize="xs" color={textColor} fontWeight="500">
                       {range.legend}

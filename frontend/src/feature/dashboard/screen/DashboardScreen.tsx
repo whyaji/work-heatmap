@@ -51,11 +51,7 @@ import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { keyframes } from '@emotion/react';
 import { useAuth } from '@/lib/auth';
 import { useQuery } from '@tanstack/react-query';
-import {
-  getCoordinateHistory,
-  CoordinateHistoryFilters,
-  getCoordinateHistoryH3,
-} from '@/lib/api/coordinateHistoryApi';
+import { CoordinateHistoryFilters } from '@/lib/api/coordinateHistoryApi';
 import { getUsers } from '@/lib/api/userApi';
 import 'leaflet/dist/leaflet.css';
 import {
@@ -81,6 +77,12 @@ import {
 } from '../components/maps-heatmap-layer-control/MapsHeatmapLayerControl';
 import { useLoading } from '@/lib/loading/LoadingProvider';
 import { RefreshButton } from '../components/refresh-button/RefreshButton';
+import moment from 'moment';
+import { AreaType } from '@/types/area.type';
+import {
+  useInfiniteCoordinateHistory,
+  useInfiniteCoordinateHistoryH3,
+} from '../hooks/useInfiniteFetchCoordinate.hook';
 
 // Animation keyframes
 const pulse = keyframes`
@@ -103,14 +105,15 @@ export const DashboardScreen = () => {
   const { isOpen: isSidebarOpen, onToggle: toggleSidebar, onOpen: onSidebarOpen } = useDisclosure();
   const [sidebarWidth, setSidebarWidth] = useState(320);
   const [isResizing, setIsResizing] = useState(false);
-  const [hasAppliedFilters, setHasAppliedFilters] = useState(false);
+
+  const hasAppliedFilters = useRef(false);
+  const hasPressFilter = useRef(false);
   const [windowBounds, setWindowBounds] = useState<{
     north: number;
     south: number;
     east: number;
     west: number;
   } | null>(null);
-  const [blokOpacity, setBlokOpacity] = useState(0.2);
 
   // onFirstMount set if not mobile then open sidebar just run on first time
   const isFirstMount = useRef(true);
@@ -121,8 +124,11 @@ export const DashboardScreen = () => {
     }
   }, [isMobile, onSidebarOpen]);
 
+  const [blokOpacity, setBlokOpacity] = useState(0.2);
   const [nearbyDistance, setNearbyDistance] = useState(50);
   const [tempNearbyDistance, setTempNearbyDistance] = useState(50);
+  const [radius, setRadius] = useState(30);
+  const [tempRadius, setTempRadius] = useState(30);
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -131,6 +137,14 @@ export const DashboardScreen = () => {
 
     return () => clearTimeout(timeout);
   }, [tempNearbyDistance]);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setRadius(tempRadius);
+    }, 800);
+
+    return () => clearTimeout(timeout);
+  }, [tempRadius]);
 
   const [showHeatmap, setShowHeatmap] = useState(true);
   const [showClusteredMarkers, setShowClusteredMarkers] = useState(true);
@@ -156,8 +170,24 @@ export const DashboardScreen = () => {
     page: '1',
     limit: '100',
   });
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+
+  const [filterArea, setFilterArea] = useState<{
+    regional: string;
+    wilayah: string;
+    estate: string;
+    afdeling: string;
+  }>({
+    regional: '',
+    wilayah: '',
+    estate: '',
+    afdeling: '',
+  });
+
+  const lastThirtyDays = moment().subtract(30, 'days').hour(0).minute(0).format('YYYY-MM-DDTHH:mm');
+  const endTodayWithTime = moment().hour(23).minute(59).second(59).format('YYYY-MM-DDTHH:mm');
+
+  const [startDate, setStartDate] = useState(lastThirtyDays);
+  const [endDate, setEndDate] = useState(endTodayWithTime);
 
   const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [selectedRegionalId, setSelectedRegionalId] = useState<string>('');
@@ -219,64 +249,45 @@ export const DashboardScreen = () => {
 
   const dataAfdeling = !isErrorAfdelings && afdelings && 'data' in afdelings ? afdelings.data : [];
 
-  const selectedEstateAbbr =
-    dataEstate.find((estate) => String(estate.id) === selectedEstateId)?.abbr ?? null;
-  const selectedAfdelingAbbr =
-    dataAfdeling.find((afdeling) => String(afdeling.id) === selectedAfdelingId)?.abbr ?? null; // ex, AFD-OA
-  const selectedAfdelingShortName = selectedAfdelingAbbr
-    ? selectedAfdelingAbbr.split('-')[1]
-    : null; // ex, OA
-
-  const {
-    data: geoJsonBlok,
-    isLoading: isLoadingGeoJsonBlok,
-    isError: isErrorGeoJsonBlok,
-  } = useQuery({
-    queryKey: ['geoJsonBlok', selectedEstateId, selectedAfdelingId],
-    queryFn: () => getGeoJsonBlok(selectedEstateAbbr, selectedAfdelingShortName),
-    enabled: selectedEstateAbbr !== null,
-  });
-
-  useEffect(() => {
-    if (isLoadingGeoJsonBlok) {
-      showLoading();
-    }
-    if (
-      geoJsonBlok &&
-      !isLoadingGeoJsonBlok &&
-      !isErrorGeoJsonBlok &&
-      'type' in geoJsonBlok &&
-      geoJsonBlok.type === 'FeatureCollection'
-    ) {
-      setSelectedGeoJsonBlok(geoJsonBlok as BlokGeoJSON);
-      hideLoading();
-    }
-  }, [geoJsonBlok, isLoadingGeoJsonBlok, isErrorGeoJsonBlok]);
-
   const isUsingH3 = mapZoom < 14;
 
-  // Only fetch data when filters have been applied
+  // Auto-paginated coordinate history query
   const {
-    data: coordinateHistoryResponse,
-    isError: isErrorCoordinateHistory,
+    data: allCoordinateData,
     isLoading: isLoadingCoordinateHistory,
+    isError: isErrorCoordinateHistory,
     refetch: refetchCoordinateHistory,
-  } = useQuery({
-    queryKey: ['coordinateHistory', filters, windowBounds],
-    queryFn: () => getCoordinateHistory(filters, windowBounds),
-    enabled: hasAppliedFilters && windowBounds !== null && !isUsingH3, // Only fetch when filters are applied
-  });
+  } = useInfiniteCoordinateHistory(
+    filters,
+    windowBounds,
+    hasAppliedFilters.current && windowBounds !== null && !isUsingH3
+  );
 
+  // Auto-paginated H3 coordinate history query
   const {
-    data: coordinateHistoryH3Response,
-    isError: isErrorCoordinateHistoryH3,
+    data: allH3Data,
+    h3Stats,
     isLoading: isLoadingCoordinateHistoryH3,
+    isError: isErrorCoordinateHistoryH3,
     refetch: refetchCoordinateHistoryH3,
-  } = useQuery({
-    queryKey: ['coordinateHistoryH3', filters, windowBounds],
-    queryFn: () => getCoordinateHistoryH3({ ...filters, resolution: String(9) }, windowBounds),
-    enabled: hasAppliedFilters && windowBounds !== null && isUsingH3, // Only fetch when filters are applied
-  });
+  } = useInfiniteCoordinateHistoryH3(
+    { ...filters, resolution: String(9) },
+    windowBounds,
+    hasAppliedFilters.current && windowBounds !== null && isUsingH3
+  );
+
+  // Update state when data is completely loaded
+  useEffect(() => {
+    if (!isLoadingCoordinateHistory && allCoordinateData.length > 0) {
+      setCoordinateHistoryData(allCoordinateData);
+    }
+  }, [allCoordinateData, isLoadingCoordinateHistory]);
+
+  useEffect(() => {
+    if (!isLoadingCoordinateHistoryH3 && allH3Data.length > 0) {
+      setCoordinateHistoryH3Data(allH3Data);
+    }
+  }, [allH3Data, isLoadingCoordinateHistoryH3]);
 
   const refreshingCoordData = isLoadingCoordinateHistory || isLoadingCoordinateHistoryH3;
 
@@ -337,7 +348,7 @@ export const DashboardScreen = () => {
   };
 
   const handleRefresh = async () => {
-    if (!hasAppliedFilters) {
+    if (!hasAppliedFilters.current) {
       toast({
         title: 'No Filters Applied',
         description: 'Please apply filters first to refresh data.',
@@ -362,19 +373,76 @@ export const DashboardScreen = () => {
     });
   };
 
+  const getSelectedWilayahFilterArea = (dataWilayah: AreaType[], selectedWilayahId: string) => {
+    const selectedWilayahAbbr =
+      dataWilayah.find((wilayah) => String(wilayah.id) === selectedWilayahId)?.abbr ?? null;
+    const splitWilayahAbbr = selectedWilayahAbbr ? selectedWilayahAbbr.split(' ')[1] : null;
+    const wilayahAddZero = (splitWilayahAbbr ?? '').length === 1 ? `0${splitWilayahAbbr}` : null;
+    const wilayah = (splitWilayahAbbr ?? '').length > 1 ? splitWilayahAbbr : wilayahAddZero;
+
+    return wilayah;
+  };
+
+  const getSelectedEstateFilterArea = (dataEstate: AreaType[], selectedEstateId: string) => {
+    const selectedEstateAbbr =
+      dataEstate.find((estate) => String(estate.id) === selectedEstateId)?.abbr ?? null;
+    return selectedEstateAbbr;
+  };
+
+  const getSelectedAfdelingFilterArea = (dataAfdeling: AreaType[], selectedAfdelingId: string) => {
+    const selectedAfdelingAbbr =
+      dataAfdeling.find((afdeling) => String(afdeling.id) === selectedAfdelingId)?.abbr ?? null;
+    const selectedAfdelingShortName = selectedAfdelingAbbr
+      ? selectedAfdelingAbbr.split('-')[1]
+      : null; // ex, OA
+    return selectedAfdelingShortName;
+  };
+
+  const getAreaGeoJsonBlok = async (
+    wilayah: string | null,
+    estate: string | null,
+    afdeling: string | null
+  ) => {
+    if (estate || wilayah) {
+      showLoading();
+      try {
+        if (estate) {
+          const geoJsonBlok = await getGeoJsonBlok(estate, afdeling);
+          setSelectedGeoJsonBlok(geoJsonBlok as BlokGeoJSON);
+        } else if (wilayah) {
+          const estates = dataEstate.map((estate) => estate.abbr);
+          const geoJsonListResponse = await Promise.all(
+            estates.map((estate) => getGeoJsonBlok(estate, afdeling))
+          );
+          const geoJsonListSuccess = geoJsonListResponse.filter(
+            (geoJson): geoJson is { type: string; features: any[] } =>
+              'type' in geoJson && 'features' in geoJson && geoJson.features.length > 0
+          );
+          const geoJson =
+            geoJsonListSuccess && geoJsonListSuccess.length > 0
+              ? {
+                  type: geoJsonListSuccess[0].type,
+                  features: geoJsonListSuccess.flatMap((geoJson) => geoJson.features),
+                }
+              : null;
+          setSelectedGeoJsonBlok(geoJson as BlokGeoJSON);
+        }
+      } catch (error) {
+        toast({
+          title: 'Error',
+          description: 'Gagal mengambil data blok',
+          status: 'error',
+          duration: 3000,
+          isClosable: true,
+        });
+      } finally {
+        hasAppliedFilters.current = true;
+        hideLoading();
+      }
+    }
+  };
+
   const handleFilterChange = useCallback(() => {
-    const newFilters: CoordinateHistoryFilters = {
-      page: '1',
-      limit: filters.limit,
-    };
-
-    if (startDate) newFilters.startDate = startDate;
-    if (endDate) newFilters.endDate = endDate;
-    if (selectedUserId) newFilters.userId = selectedUserId;
-
-    setFilters(newFilters);
-    setHasAppliedFilters(true);
-
     toast({
       title: 'Filters Applied',
       description: 'Fetching data with applied filters...',
@@ -382,54 +450,118 @@ export const DashboardScreen = () => {
       duration: 2000,
       isClosable: true,
     });
-  }, [startDate, endDate, selectedUserId, filters.limit]);
+
+    const filterChangeAsync = async () => {
+      const newFilters: CoordinateHistoryFilters = {
+        page: '1',
+        limit: filters.limit,
+      };
+
+      if (startDate) newFilters.startDate = startDate;
+      if (endDate) newFilters.endDate = endDate;
+      if (selectedUserId) newFilters.userId = selectedUserId;
+
+      setFilters(newFilters);
+
+      const newFilterArea = {
+        regional: selectedRegionalId,
+        wilayah: selectedWilayahId,
+        estate: selectedEstateId,
+        afdeling: selectedAfdelingId,
+      };
+
+      const filterAreaChanged = Object.keys(filterArea).some(
+        (key) =>
+          filterArea[key as keyof typeof filterArea] !==
+          newFilterArea[key as keyof typeof newFilterArea]
+      );
+
+      if (!isLoadingEstates) {
+        const wilayah = getSelectedWilayahFilterArea(dataWilayah, selectedWilayahId);
+        if (wilayah && filterAreaChanged) {
+          const estate = getSelectedEstateFilterArea(dataEstate, selectedEstateId);
+          const afdeling = getSelectedAfdelingFilterArea(dataAfdeling, selectedAfdelingId);
+          await getAreaGeoJsonBlok(wilayah, estate, afdeling);
+          setFilterArea(newFilterArea);
+        } else {
+          hasAppliedFilters.current = true;
+        }
+      }
+    };
+
+    filterChangeAsync();
+  }, [
+    startDate,
+    endDate,
+    selectedUserId,
+    filters.limit,
+    selectedRegionalId,
+    selectedWilayahId,
+    selectedEstateId,
+    selectedAfdelingId,
+    dataWilayah,
+    dataEstate,
+    dataAfdeling,
+    isLoadingEstates,
+  ]);
 
   const stats = useMemo(() => {
     let totalCoordinates = 0;
     let uniqueUsers = 0;
+    let isLoading = false;
+    let dataSource = '';
 
     if (isUsingH3) {
-      const data = coordinateHistoryH3Response?.data ?? [];
-      const stats = coordinateHistoryH3Response?.h3Stats ?? null;
-      if (!isLoadingCoordinateHistoryH3) {
-        setCoordinateHistoryH3Data(data);
+      isLoading = isLoadingCoordinateHistoryH3;
+      dataSource = 'H3';
+
+      if (h3Stats) {
+        // Use server-side calculated stats for H3 (more accurate)
+        totalCoordinates = h3Stats.totalCoordinates ?? 0;
+        uniqueUsers = h3Stats.totalUniqueUsers ?? 0;
       }
-      totalCoordinates = stats?.totalCoordinates ?? 0;
-      uniqueUsers = stats?.totalUniqueUsers ?? 0;
     } else {
-      const data = coordinateHistoryResponse?.data ?? [];
-      if (!isLoadingCoordinateHistory) {
-        setCoordinateHistoryData(data);
+      isLoading = isLoadingCoordinateHistory;
+      dataSource = 'Coordinates';
+
+      if (allCoordinateData.length > 0) {
+        totalCoordinates = allCoordinateData.length;
+        uniqueUsers = new Set(allCoordinateData.map((coord) => coord.user_id)).size;
       }
-      totalCoordinates = data.length;
-      uniqueUsers = new Set(data.map((coord) => coord.user_id)).size;
     }
 
-    return [
-      {
-        label: 'Total Coordinates',
-        number: totalCoordinates.toString(),
-        change: '+0',
-        changePercent: '0%',
-        isPositive: true,
-        helpText: 'tracking points',
-        icon: FiMapPin,
-        color: 'blue',
-        gradient: 'linear(to-r, blue.400, blue.600)',
-      },
-      {
-        label: 'Active Users',
-        number: uniqueUsers.toString(),
-        change: '+0',
-        changePercent: '0%',
-        isPositive: true,
-        helpText: 'unique workers',
-        icon: FiUsers,
-        color: 'green',
-        gradient: 'linear(to-r, green.400, green.600)',
-      },
-    ];
-  }, [coordinateHistoryResponse, coordinateHistoryH3Response]);
+    return {
+      stats: [
+        {
+          label: 'Total Coordinates',
+          number: totalCoordinates.toString(),
+          helpText: `${dataSource.toLowerCase()} tracking points`,
+          icon: FiMapPin,
+          color: 'blue',
+          gradient: 'linear(to-r, blue.400, blue.600)',
+        },
+        {
+          label: 'Active Users',
+          number: uniqueUsers.toString(),
+          helpText: 'unique workers',
+          icon: FiUsers,
+          color: 'green',
+          gradient: 'linear(to-r, green.400, green.600)',
+        },
+      ],
+      isLoading,
+      dataSource,
+      totalCoordinates,
+      uniqueUsers,
+    };
+  }, [
+    isUsingH3,
+    allCoordinateData,
+    allH3Data,
+    h3Stats,
+    isLoadingCoordinateHistory,
+    isLoadingCoordinateHistoryH3,
+  ]);
 
   const handleFullScreen = () => {
     if (!document.fullscreenElement) {
@@ -447,9 +579,7 @@ export const DashboardScreen = () => {
         <Alert status="error">
           <AlertIcon />
           <AlertTitle>Error!</AlertTitle>
-          <AlertDescription>
-            Failed to load dashboard data. Please try refreshing the page.
-          </AlertDescription>
+          <AlertDescription>Gagal mengambil data. Silakan coba lagi.</AlertDescription>
         </Alert>
       </Box>
     );
@@ -552,7 +682,7 @@ export const DashboardScreen = () => {
                   <Text fontSize="sm" fontWeight="semibold" color="gray.700">
                     Statistics
                   </Text>
-                  {stats.map((stat, index) => (
+                  {stats.stats.map((stat, index) => (
                     <Card
                       key={index}
                       shadow="md"
@@ -611,7 +741,12 @@ export const DashboardScreen = () => {
                   <FormControl>
                     <Select
                       value={selectedRegionalId}
-                      onChange={(e) => setSelectedRegionalId(e.target.value)}
+                      onChange={(e) => {
+                        setSelectedRegionalId(e.target.value);
+                        setSelectedWilayahId('');
+                        setSelectedEstateId('');
+                        setSelectedAfdelingId('');
+                      }}
                       size="sm"
                       borderRadius="lg"
                       disabled={isLoadingRegionals}
@@ -628,7 +763,11 @@ export const DashboardScreen = () => {
                   <FormControl>
                     <Select
                       value={selectedWilayahId}
-                      onChange={(e) => setSelectedWilayahId(e.target.value)}
+                      onChange={(e) => {
+                        setSelectedWilayahId(e.target.value);
+                        setSelectedEstateId('');
+                        setSelectedAfdelingId('');
+                      }}
                       size="sm"
                       borderRadius="lg"
                       disabled={isLoadingWilayahs || isLoadingRegionals}
@@ -645,7 +784,10 @@ export const DashboardScreen = () => {
                   <FormControl>
                     <Select
                       value={selectedEstateId}
-                      onChange={(e) => setSelectedEstateId(e.target.value)}
+                      onChange={(e) => {
+                        setSelectedEstateId(e.target.value);
+                        setSelectedAfdelingId('');
+                      }}
                       size="sm"
                       borderRadius="lg"
                       disabled={isLoadingEstates || isLoadingWilayahs || isLoadingRegionals}
@@ -680,20 +822,6 @@ export const DashboardScreen = () => {
                     </Select>
                   </FormControl>
                 </VStack>
-
-                <Divider />
-                {/* input number for nearby distance */}
-                <Text fontSize="xs" color="gray.500">
-                  Nearby Distance (meter)
-                </Text>
-                <Input
-                  type="number"
-                  min={1}
-                  value={String(tempNearbyDistance)}
-                  onChange={(e) => setTempNearbyDistance(Number(e.target.value))}
-                  size="sm"
-                  borderRadius="lg"
-                />
 
                 <Divider />
 
@@ -781,7 +909,14 @@ export const DashboardScreen = () => {
                     <Button
                       colorScheme="blue"
                       leftIcon={<FiFilter />}
-                      onClick={handleFilterChange}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+
+                        hasAppliedFilters.current = false;
+                        hasPressFilter.current = true;
+                        handleFilterChange();
+                      }}
                       size="md"
                       borderRadius="xl"
                       fontWeight="semibold"
@@ -797,7 +932,7 @@ export const DashboardScreen = () => {
                       setEndDate('');
                       setSelectedUserId('');
                       setFilters({ page: '1', limit: '100' });
-                      setHasAppliedFilters(false);
+                      hasAppliedFilters.current = false;
                     }}
                     size="md"
                     borderRadius="xl"
@@ -808,6 +943,38 @@ export const DashboardScreen = () => {
                     w="full">
                     Clear Filters
                   </Button>
+                </VStack>
+
+                <Divider />
+                <VStack spacing={3} align="stretch">
+                  <Text fontSize="sm" fontWeight="semibold" color="gray.700">
+                    Customize Heatmap
+                  </Text>
+                  {/* input number for nearby distance */}
+                  <Text fontSize="xs" color="gray.500">
+                    Nearby Distance (meter)
+                  </Text>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={String(tempNearbyDistance)}
+                    onChange={(e) => setTempNearbyDistance(Number(e.target.value))}
+                    size="sm"
+                    borderRadius="lg"
+                  />
+
+                  {/* input number for radius heatmap point */}
+                  <Text fontSize="xs" color="gray.500">
+                    Radius Heatmap Point (meter)
+                  </Text>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={String(tempRadius)}
+                    onChange={(e) => setTempRadius(Number(e.target.value))}
+                    size="sm"
+                    borderRadius="lg"
+                  />
                 </VStack>
               </VStack>
             </Box>
@@ -910,8 +1077,8 @@ export const DashboardScreen = () => {
 
       {/* Map Controls */}
       <MapsHeatmapLayerControl
-        areaOpacity={blokOpacity}
-        setAreaOpacity={setBlokOpacity}
+        areaOpacity={selectedGeoJsonBlok ? blokOpacity : undefined}
+        setAreaOpacity={selectedGeoJsonBlok ? setBlokOpacity : undefined}
         selectedMapTileIndex={selectedMapTileIndex}
         setSelectedMapTileIndex={setSelectedMapTileIndex}
         isUsingH3={isUsingH3}
@@ -943,6 +1110,7 @@ export const DashboardScreen = () => {
               data={coordinateHistoryH3Data}
               showHeatmap={showHeatmap}
               showH3Markers={showMarker}
+              radius={radius}
             />
           )}
           {(!isUsingH3 ||
@@ -953,9 +1121,18 @@ export const DashboardScreen = () => {
               showClusteredMarkers={showClusteredMarkers}
               showIndividualMarkers={showMarker}
               nearbyDistance={nearbyDistance}
+              radius={radius}
             />
           )}
-          <MapBoundsListener windowBounds={windowBounds} setWindowBounds={setWindowBounds} />
+          <MapBoundsListener
+            windowBounds={windowBounds}
+            setWindowBounds={setWindowBounds}
+            onWindowBoundsChange={() => {
+              if (hasPressFilter.current) {
+                hasAppliedFilters.current = true;
+              }
+            }}
+          />
         </MapContainer>
       </Box>
     </Box>

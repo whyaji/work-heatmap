@@ -9,7 +9,6 @@ import L from 'leaflet';
 const HeatmapLayer = HeatmapLayerFactory<[number, number, number]>();
 
 export const heatmapConfig = {
-  radius: 30,
   gradient: {
     0.0: 'rgba(0, 180, 0, 1)', // Hijau pekat solid (lebih terlihat di map)
     0.2: 'rgba(50, 205, 50, 1)', // Hijau terang solid (masih dominan hijau)
@@ -42,12 +41,14 @@ export const HeatmapCoordinateDataProcessor: FC<{
   showClusteredMarkers?: boolean;
   showIndividualMarkers?: boolean;
   nearbyDistance?: number;
+  radius?: number;
 }> = ({
   data,
   showHeatmap = true,
   showClusteredMarkers = true,
   showIndividualMarkers = true,
   nearbyDistance = 50,
+  radius = 30,
 }) => {
   // Convert to heatmap format: [lat, lng, intensity]
   const heatmapPoints = useMemo(() => {
@@ -133,6 +134,7 @@ export const HeatmapCoordinateDataProcessor: FC<{
       {/* Heatmap Layer with improved configuration */}
       {showHeatmap && (
         <HeatmapLayer
+          radius={radius}
           points={heatmapPoints}
           longitudeExtractor={(m: any) => m[1]}
           latitudeExtractor={(m: any) => m[0]}
@@ -179,7 +181,8 @@ export const HeatmapH3DataProcessor: FC<{
   data: H3Type[];
   showHeatmap?: boolean;
   showH3Markers?: boolean;
-}> = ({ data, showHeatmap = true, showH3Markers = true }) => {
+  radius?: number;
+}> = ({ data, showHeatmap = true, showH3Markers = true, radius = 30 }) => {
   // Process H3 data for heatmap visualization
   const heatmapPoints = useMemo(() => {
     return data.map((h3Item) => {
@@ -244,6 +247,7 @@ export const HeatmapH3DataProcessor: FC<{
       {/* H3 Heatmap Layer */}
       {showHeatmap && (
         <HeatmapLayer
+          radius={radius}
           points={heatmapPoints}
           longitudeExtractor={(m: any) => m[1]}
           latitudeExtractor={(m: any) => m[0]}

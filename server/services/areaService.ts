@@ -13,9 +13,9 @@ export interface AreaServiceResponse<T = any> {
 
 export interface AreaType {
   data: {
-    id: any;
-    abbr: any;
-    nama: any;
+    id: number;
+    abbr: string;
+    nama: string;
   }[];
   total: number;
 }
