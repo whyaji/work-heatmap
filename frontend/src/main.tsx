@@ -9,6 +9,7 @@ import './index.css';
 import reportWebVitals from './reportWebVitals.ts';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './lib/auth/AuthProvider';
+import { LoadingProvider } from './lib/loading/LoadingProvider.tsx';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -50,6 +51,7 @@ function App() {
           <AuthProvider router={router}>
             {/* AuthProvider will render RouterProvider internally */}
           </AuthProvider>
+          <LoadingProvider />
         </ChakraProvider>
       </QueryClientProvider>
     </StrictMode>
