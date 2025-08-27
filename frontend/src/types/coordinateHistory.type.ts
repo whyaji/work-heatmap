@@ -15,8 +15,8 @@ export type CoordinateHistoryType = {
 export type H3Type = {
   h3Index: string;
   center: { lat: number; lon: number };
-  resolution: number;
-  area: number;
+  resolution?: number;
+  area?: number;
   count: number;
   uniqueUsers: number;
   firstSeen: string;

@@ -30,22 +30,11 @@ import {
   AlertDescription,
   Tooltip,
   useDisclosure,
-  Drawer,
-  DrawerBody,
-  DrawerHeader,
-  DrawerContent,
-  DrawerCloseButton,
   Divider,
-  DrawerOverlay,
-  Slider,
-  SliderTrack,
-  SliderFilledTrack,
-  SliderThumb,
   Collapse,
   useBreakpointValue,
 } from '@chakra-ui/react';
 import {
-  FiMap,
   FiUsers,
   FiActivity,
   FiMapPin,
@@ -53,12 +42,9 @@ import {
   FiFilter,
   FiCalendar,
   FiUser,
-  FiRefreshCw,
-  FiLayers,
   FiMaximize,
   FiMinimize,
   FiMenu,
-  FiGlobe,
   FiChevronDown,
 } from 'react-icons/fi';
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
@@ -89,7 +75,12 @@ import { BlokGeoJSON } from '../types/blockGeoJson.type';
 import { BloksPolygonLayer } from '../components/bloks-polygon-layer/BloksPolygonLayer';
 import { CoordinateHistoryType, H3Type } from '@/types/coordinateHistory.type';
 import { LatLngExpression } from 'leaflet';
-import { MapsHeatmapLayerControl } from '../components/maps-heatmap-layer-control/MapsHeatmapLayerControl';
+import {
+  listMapTileOptions,
+  MapsHeatmapLayerControl,
+} from '../components/maps-heatmap-layer-control/MapsHeatmapLayerControl';
+import { useLoading } from '@/lib/loading/LoadingProvider';
+import { RefreshButton } from '../components/refresh-button/RefreshButton';
 
 // Animation keyframes
 const pulse = keyframes`
@@ -103,42 +94,10 @@ const slideIn = keyframes`
   to { transform: translateY(0); opacity: 1; }
 `;
 
-const float = keyframes`
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-5px); }
-  100% { transform: translateY(0px); }
-`;
-
-interface MapTileOption {
-  label: string;
-  value: string;
-  source: string;
-  icon: any;
-  description: string;
-}
-
-const listUrl: MapTileOption[] = [
-  {
-    label: 'Street View',
-    value: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    source: 'OpenStreetMap',
-    icon: FiMap,
-    description: 'Detailed street-level view',
-  },
-  {
-    label: 'Satellite View',
-    value:
-      'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    source: 'Esri World Imagery',
-    icon: FiGlobe,
-    description: 'High-resolution satellite imagery',
-  },
-];
-
 export const DashboardScreen = () => {
+  const { showLoading, hideLoading } = useLoading();
   const { user, logout } = useAuth();
   const toast = useToast();
-  const [refreshing, setRefreshing] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const isMobile = useBreakpointValue({ base: true, md: false });
   const { isOpen: isSidebarOpen, onToggle: toggleSidebar, onOpen: onSidebarOpen } = useDisclosure();
@@ -151,7 +110,7 @@ export const DashboardScreen = () => {
     east: number;
     west: number;
   } | null>(null);
-  const [blokOpacity, setBlokOpacity] = useState(0.3);
+  const [blokOpacity, setBlokOpacity] = useState(0.2);
 
   // onFirstMount set if not mobile then open sidebar just run on first time
   const isFirstMount = useRef(true);
@@ -177,17 +136,11 @@ export const DashboardScreen = () => {
   const [showClusteredMarkers, setShowClusteredMarkers] = useState(true);
   const [showMarker, setShowMarker] = useState(true);
 
-  const {
-    isOpen: isMapLayersOpen,
-    onOpen: onMapLayersOpen,
-    onClose: onMapLayersClose,
-  } = useDisclosure();
-
-  const mapLayersRef = useRef<HTMLButtonElement>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const resizeHandleRef = useRef<HTMLDivElement>(null);
 
-  const [selectedMapTile, setSelectedMapTile] = useState(listUrl[0]);
+  const [selectedMapTileIndex, setSelectedMapTileIndex] = useState(0);
+  const selectedMapTile = listMapTileOptions[selectedMapTileIndex];
   const [mapZoom, setMapZoom] = useState(7);
   const mapCenter: LatLngExpression = [0, 114.5];
 
@@ -285,6 +238,9 @@ export const DashboardScreen = () => {
   });
 
   useEffect(() => {
+    if (isLoadingGeoJsonBlok) {
+      showLoading();
+    }
     if (
       geoJsonBlok &&
       !isLoadingGeoJsonBlok &&
@@ -293,6 +249,7 @@ export const DashboardScreen = () => {
       geoJsonBlok.type === 'FeatureCollection'
     ) {
       setSelectedGeoJsonBlok(geoJsonBlok as BlokGeoJSON);
+      hideLoading();
     }
   }, [geoJsonBlok, isLoadingGeoJsonBlok, isErrorGeoJsonBlok]);
 
@@ -320,6 +277,8 @@ export const DashboardScreen = () => {
     queryFn: () => getCoordinateHistoryH3({ ...filters, resolution: String(9) }, windowBounds),
     enabled: hasAppliedFilters && windowBounds !== null && isUsingH3, // Only fetch when filters are applied
   });
+
+  const refreshingCoordData = isLoadingCoordinateHistory || isLoadingCoordinateHistoryH3;
 
   const { data: usersResponse, isError: isErrorUsers } = useQuery({
     queryKey: ['users'],
@@ -389,13 +348,11 @@ export const DashboardScreen = () => {
       return;
     }
 
-    setRefreshing(true);
     if (isUsingH3) {
       await refetchCoordinateHistoryH3();
     } else {
       await refetchCoordinateHistory();
     }
-    setRefreshing(false);
     toast({
       title: 'Data Refreshed',
       description: 'All tracking data has been updated.',
@@ -650,21 +607,6 @@ export const DashboardScreen = () => {
                   <Text fontSize="sm" fontWeight="semibold" color="gray.700">
                     Area
                   </Text>
-
-                  {/* slider for blok opacity */}
-                  <Slider
-                    aria-label="slider-ex-1"
-                    value={blokOpacity}
-                    onChange={(value) => setBlokOpacity(value)}
-                    min={0}
-                    max={0.5}
-                    step={0.02}>
-                    <SliderTrack>
-                      <SliderFilledTrack />
-                    </SliderTrack>
-                    <SliderThumb />
-                  </Slider>
-
                   {/* Regional Select */}
                   <FormControl>
                     <Select
@@ -914,42 +856,13 @@ export const DashboardScreen = () => {
           <HStack spacing={3} pointerEvents="auto" />
           {/* Right side - Controls */}
           <HStack spacing={2} pointerEvents="auto">
-            {/* Tile Layer Selector */}
-            <Tooltip label="Map Layers">
-              <IconButton
-                aria-label="Map layers"
-                icon={<FiLayers />}
-                variant="ghost"
-                size="md"
-                onClick={onMapLayersOpen}
-                bg={controlsBg}
-                backdropFilter="blur(10px)"
-                border="1px solid"
-                borderColor={borderColor}
-                borderRadius="lg"
-                shadow="lg"
-                _hover={{ bg: 'rgba(255, 255, 255, 0.98)' }}
-              />
-            </Tooltip>
-
             {/* Refresh Button */}
-            <Tooltip label="Refresh Data">
-              <IconButton
-                aria-label="Refresh data"
-                icon={<FiRefreshCw />}
-                variant="ghost"
-                size="md"
-                isLoading={refreshing}
-                onClick={handleRefresh}
-                bg={controlsBg}
-                backdropFilter="blur(10px)"
-                border="1px solid"
-                borderColor={borderColor}
-                borderRadius="lg"
-                shadow="lg"
-                _hover={{ bg: 'rgba(255, 255, 255, 0.98)' }}
-              />
-            </Tooltip>
+            <RefreshButton
+              refreshingCoordData={refreshingCoordData}
+              handleRefresh={handleRefresh}
+              controlsBg={controlsBg}
+              borderColor={borderColor}
+            />
 
             {/* Fullscreen Button */}
             <Tooltip label={isFullScreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}>
@@ -966,7 +879,7 @@ export const DashboardScreen = () => {
                 }}
                 borderRadius="lg"
                 shadow="lg"
-                animation={`${float} 3s ease-in-out infinite`}
+                // animation={`${float} 3s ease-in-out infinite`}
               />
             </Tooltip>
 
@@ -997,6 +910,10 @@ export const DashboardScreen = () => {
 
       {/* Map Controls */}
       <MapsHeatmapLayerControl
+        areaOpacity={blokOpacity}
+        setAreaOpacity={setBlokOpacity}
+        selectedMapTileIndex={selectedMapTileIndex}
+        setSelectedMapTileIndex={setSelectedMapTileIndex}
         isUsingH3={isUsingH3}
         showHeatmap={showHeatmap}
         showClusteredMarkers={showClusteredMarkers}
@@ -1041,45 +958,6 @@ export const DashboardScreen = () => {
           <MapBoundsListener windowBounds={windowBounds} setWindowBounds={setWindowBounds} />
         </MapContainer>
       </Box>
-      {/* Map Layers Drawer */}
-      <Drawer
-        isOpen={isMapLayersOpen}
-        placement="right"
-        onClose={onMapLayersClose}
-        finalFocusRef={mapLayersRef}
-        size="md">
-        <DrawerOverlay />
-        <DrawerContent>
-          <DrawerCloseButton />
-          <DrawerHeader borderBottomWidth="1px" color="gray.800" fontWeight="bold" fontSize="lg">
-            Map Layers
-          </DrawerHeader>
-          <DrawerBody>
-            <VStack spacing={6} align="stretch" pt={4}>
-              {listUrl.map((item) => (
-                <Card
-                  key={item.value}
-                  onClick={() => {
-                    setSelectedMapTile(item);
-                    onMapLayersClose();
-                  }}
-                  cursor="pointer"
-                  _hover={{ shadow: 'md', transform: 'translateY(-2px)' }}
-                  transition="all 0.2s">
-                  <CardBody>
-                    <HStack spacing={3}>
-                      <Icon as={item.icon} color="purple.500" boxSize={5} />
-                      <Text fontWeight="bold" color="gray.800">
-                        {item.label}
-                      </Text>
-                    </HStack>
-                  </CardBody>
-                </Card>
-              ))}
-            </VStack>
-          </DrawerBody>
-        </DrawerContent>
-      </Drawer>
     </Box>
   );
 };

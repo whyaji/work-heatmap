@@ -11,12 +11,48 @@ import {
   Collapse,
   Text,
   useDisclosure,
+  Image,
+  SimpleGrid,
+  Slider,
+  SliderTrack,
+  SliderFilledTrack,
+  SliderThumb,
 } from '@chakra-ui/react';
 import { ComponentProps, FC } from 'react';
 import { FiMap, FiLayers, FiGrid, FiChevronUp, FiEye } from 'react-icons/fi';
 import { heatmapConfig } from '../maps-heatmap/MapsHeatmaps';
 
+export interface MapTileOption {
+  label: string;
+  value: string;
+  source: string;
+  thumbnail: string;
+  description: string;
+}
+
+export const listMapTileOptions: MapTileOption[] = [
+  {
+    label: 'Satellite View',
+    value:
+      'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    source: 'Esri World Imagery',
+    thumbnail: '/satellite-view.jpg',
+    description: 'High-resolution satellite imagery',
+  },
+  {
+    label: 'Street View',
+    value: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    source: 'OpenStreetMap',
+    thumbnail: '/street-view.jpg',
+    description: 'Detailed street-level view',
+  },
+];
+
 export const MapsHeatmapLayerControl: FC<{
+  areaOpacity: number;
+  setAreaOpacity: (opacity: number) => void;
+  selectedMapTileIndex: number;
+  setSelectedMapTileIndex: (index: number) => void;
   isUsingH3: boolean;
   showHeatmap: boolean;
   showClusteredMarkers: boolean;
@@ -25,6 +61,10 @@ export const MapsHeatmapLayerControl: FC<{
   setShowClusteredMarkers: (show: boolean) => void;
   setShowMarker: (show: boolean) => void;
 }> = ({
+  areaOpacity,
+  setAreaOpacity,
+  selectedMapTileIndex,
+  setSelectedMapTileIndex,
   isUsingH3,
   showHeatmap,
   showClusteredMarkers,
@@ -147,7 +187,136 @@ export const MapsHeatmapLayerControl: FC<{
           style={{
             width: '100%',
           }}>
-          <VStack spacing={2} p={3}>
+          <VStack spacing={3} p={3}>
+            {/* Tile Layer Selector */}
+            <Box w="100%">
+              <Text fontSize="xs" fontWeight="600" color={textColor} mb={1}>
+                Map Style
+              </Text>
+              <SimpleGrid columns={2} spacing={1}>
+                {listMapTileOptions.map((option, index) => (
+                  <Tooltip
+                    key={option.value}
+                    label={`${option.description} (${option.source})`}
+                    placement="top"
+                    hasArrow>
+                    <Box
+                      position="relative"
+                      cursor="pointer"
+                      borderRadius="md"
+                      overflow="hidden"
+                      border="1px solid"
+                      borderColor={selectedMapTileIndex === index ? activeBorder : borderColor}
+                      bg={selectedMapTileIndex === index ? activeFill : 'transparent'}
+                      transition="all 0.2s"
+                      _hover={{
+                        borderColor:
+                          selectedMapTileIndex === index ? activeBorder : hoverBorderColor,
+                        bg: selectedMapTileIndex === index ? activeFill : hoverNonactiveFill,
+                        transform: 'translateY(-1px)',
+                        boxShadow: 'sm',
+                      }}
+                      onClick={() => setSelectedMapTileIndex(index)}>
+                      {/* Thumbnail */}
+                      <Box position="relative" h="40px" overflow="hidden">
+                        <Image
+                          src={option.thumbnail}
+                          alt={option.label}
+                          w="100%"
+                          h="100%"
+                          objectFit="cover"
+                          fallbackSrc="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEyMCIgdmlld0JveD0iMCAwIDIwMCAxMjAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMTIwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMDAgNjBDMTAwIDYwIDg1IDQ1IDcwIDQ1QzU1IDQ1IDQwIDYwIDQwIDYwQzQwIDYwIDU1IDc1IDcwIDc1Qzg1IDc1IDEwMCA2MCAxMDAgNjBaIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xNjAgNjBDMTYwIDYwIDE0NSA0NSAxMzAgNDVDMTE1IDQ1IDEwMCA2MCAxMDAgNjBDMTAwIDYwIDExNSA3NSAxMzAgNzVDMTQ1IDc1IDE2MCA2MCAxNjAgNjBaIiBmaWxsPSIjRjNGNEY2Ii8+Cjwvc3ZnPgo="
+                        />
+                        {/* Overlay for selected state */}
+                        {selectedMapTileIndex === index && (
+                          <Box
+                            position="absolute"
+                            top={0}
+                            left={0}
+                            right={0}
+                            bottom={0}
+                            bg="blue.500"
+                            opacity={0.2}
+                            display="flex"
+                            alignItems="center"
+                            justifyContent="center">
+                            <Icon as={FiEye} color="white" boxSize={3} />
+                          </Box>
+                        )}
+                      </Box>
+
+                      {/* Label */}
+                      <Box p={1}>
+                        <Text
+                          fontSize="2xs"
+                          fontWeight="500"
+                          color={selectedMapTileIndex === index ? 'blue.700' : textColor}
+                          textAlign="center"
+                          noOfLines={1}>
+                          {option.label}
+                        </Text>
+                      </Box>
+
+                      {/* Selection indicator */}
+                      {selectedMapTileIndex === index && (
+                        <Box
+                          position="absolute"
+                          top={1}
+                          right={1}
+                          bg="blue.500"
+                          color="white"
+                          borderRadius="full"
+                          p={0.5}
+                          boxSize={4}
+                          display="flex"
+                          alignItems="center"
+                          justifyContent="center">
+                          <Icon as={FiEye} boxSize={2.5} />
+                        </Box>
+                      )}
+                    </Box>
+                  </Tooltip>
+                ))}
+              </SimpleGrid>
+            </Box>
+
+            {/* Divider */}
+            <Box w="100%" h="1px" bg={borderColor} opacity={0.5} />
+
+            {/* Area Opacity Slider*/}
+            <Box w="100%">
+              <HStack justify="space-between" mb={2}>
+                <Text fontSize="xs" fontWeight="600" color={textColor}>
+                  Area Opacity
+                </Text>
+                <Text fontSize="xs" color="blue.500" fontWeight="500">
+                  {(areaOpacity * 100).toFixed(0)}%
+                </Text>
+              </HStack>
+              <Slider
+                value={areaOpacity}
+                onChange={setAreaOpacity}
+                min={0}
+                max={1}
+                step={0.02}
+                size="sm"
+                colorScheme="blue">
+                <SliderTrack bg={borderColor}>
+                  <SliderFilledTrack bg="blue.500" />
+                </SliderTrack>
+                <SliderThumb
+                  boxSize={4}
+                  bg="blue.500"
+                  _hover={{ bg: 'blue.600' }}
+                  _active={{ bg: 'blue.700' }}
+                />
+              </Slider>
+            </Box>
+
+            {/* Divider */}
+            <Box w="100%" h="1px" bg={borderColor} opacity={0.5} />
+
+            {/* Heatmap */}
             <Tooltip label="Toggle heatmap visualization" placement="left">
               <Button
                 size="sm"

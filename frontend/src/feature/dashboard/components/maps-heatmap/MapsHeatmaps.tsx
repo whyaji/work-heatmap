@@ -9,16 +9,14 @@ import L from 'leaflet';
 const HeatmapLayer = HeatmapLayerFactory<[number, number, number]>();
 
 export const heatmapConfig = {
-  // Radius untuk setiap titik heatmap
   radius: 30,
-  // Gradasi warna dari hijau muda ke merah
   gradient: {
-    0.0: 'rgba(0, 255, 0, 0.9)', // Hijau terang dengan transparansi 80% (tidak terlihat)
-    0.2: 'rgba(128, 255, 0, 0.95)', // Hijau-kuning dengan transparansi 85% (minimal 1 tetangga)
-    0.4: 'rgba(255, 255, 0, 0.95)', // Kuning dengan transparansi 90% (2-3 tetangga)
-    0.6: 'rgba(255, 128, 0, 0.95)', // Orange dengan transparansi 95% (4-5 tetangga)
-    0.8: 'rgba(255, 64, 0, 1)', // Orange-merah opaque (6+ tetangga)
-    1.0: 'rgba(255, 0, 0, 1)', // Merah opaque (banyak tetangga)
+    0.0: 'rgba(0, 180, 0, 1)', // Hijau pekat solid (lebih terlihat di map)
+    0.2: 'rgba(50, 205, 50, 1)', // Hijau terang solid (masih dominan hijau)
+    0.4: 'rgba(173, 255, 47, 0.95)', // Hijau-kuning (lebih lambat berubah ke kuning)
+    0.6: 'rgba(255, 200, 0, 0.95)', // Kuning-orange
+    0.8: 'rgba(255, 100, 0, 1)', // Orange-merah
+    1.0: 'rgba(255, 0, 0, 1)', // Merah solid
   },
 };
 
@@ -111,15 +109,15 @@ export const HeatmapCoordinateDataProcessor: FC<{
               weight={1}
               opacity={0.5}>
               <Popup>
-                <Box p={2}>
+                <Box>
                   <Text fontWeight="bold" fontSize="sm">
-                    Worker Location
+                    Lokasi Pengguna
                   </Text>
                   <Text fontSize="sm">
-                    Coordinates: {lat.toFixed(6)}, {lng.toFixed(6)}
+                    {lat.toFixed(6)}, {lng.toFixed(6)}
                   </Text>
-                  <Text fontSize="sm">User ID: {coord.user_id}</Text>
-                  <Text fontSize="sm">Time: {new Date(coord.timestamp).toLocaleString()}</Text>
+                  <Text fontSize="sm">{coord.user?.nama ?? coord.user_id}</Text>
+                  <Text fontSize="sm">{new Date(coord.timestamp).toLocaleString()}</Text>
                 </Box>
               </Popup>
             </CircleMarker>
@@ -221,23 +219,17 @@ export const HeatmapH3DataProcessor: FC<{
             weight={2}
             opacity={0.7}>
             <Popup>
-              <Box p={2}>
+              <Box>
                 <Text fontWeight="bold" fontSize="sm">
-                  H3 Cell
+                  Kelompok Titik
+                </Text>
+                <Text fontSize="sm">Total Kordinat: {h3Item.count}</Text>
+                <Text fontSize="sm">Jumlah User: {h3Item.uniqueUsers}</Text>
+                <Text fontSize="sm">
+                  Waktu Pertama: {new Date(h3Item.firstSeen).toLocaleString()}
                 </Text>
                 <Text fontSize="sm">
-                  Coordinates: {lat.toFixed(6)}, {lon.toFixed(6)}
-                </Text>
-                <Text fontSize="sm">H3 Index: {h3Item.h3Index}</Text>
-                <Text fontSize="sm">Resolution: {h3Item.resolution}</Text>
-                <Text fontSize="sm">Total Coordinates: {h3Item.count}</Text>
-                <Text fontSize="sm">Unique Users: {h3Item.uniqueUsers}</Text>
-                <Text fontSize="sm">Area: {h3Item.area.toFixed(2)} km²</Text>
-                <Text fontSize="sm">
-                  First Seen: {new Date(h3Item.firstSeen).toLocaleDateString()}
-                </Text>
-                <Text fontSize="sm">
-                  Last Seen: {new Date(h3Item.lastSeen).toLocaleDateString()}
+                  Waktu Terakhir: {new Date(h3Item.lastSeen).toLocaleString()}
                 </Text>
               </Box>
             </Popup>

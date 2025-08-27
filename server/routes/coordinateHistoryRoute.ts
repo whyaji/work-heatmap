@@ -197,8 +197,6 @@ export const coordinateHistoryRoute = new Hono()
             acc[h3Index] = {
               h3Index,
               center: record.h3.center,
-              resolution: record.h3.resolution,
-              area: record.h3.area,
               count: 0,
               users: new Set<number>(),
               firstSeen: record.timestamp,
@@ -236,8 +234,8 @@ export const coordinateHistoryRoute = new Hono()
           {
             h3Index: string;
             center: { lat: number; lon: number };
-            resolution: number;
-            area: number;
+            resolution?: number;
+            area?: number;
             count: number;
             users: Set<number>;
             firstSeen: Date;
