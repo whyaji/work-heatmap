@@ -12,12 +12,6 @@ import {
 
 export const useInfiniteCoordinateHistory = (
   baseFilters: CoordinateHistoryFilters,
-  windowBounds: {
-    north: number;
-    south: number;
-    east: number;
-    west: number;
-  } | null,
   enabled: boolean = true
 ) => {
   const {
@@ -30,9 +24,9 @@ export const useInfiniteCoordinateHistory = (
     error,
     refetch,
   } = useInfiniteQuery<CoordinateHistoryResponse>({
-    queryKey: ['coordinateHistoryInfinite', baseFilters, windowBounds],
+    queryKey: ['coordinateHistoryInfinite', baseFilters],
     queryFn: ({ pageParam = 1 }) =>
-      getCoordinateHistory({ ...baseFilters, page: String(pageParam) }, windowBounds),
+      getCoordinateHistory({ ...baseFilters, page: String(pageParam) }),
     getNextPageParam: (lastPage: CoordinateHistoryResponse) =>
       lastPage.pagination.hasNext ? lastPage.pagination.page + 1 : undefined,
     initialPageParam: 1,
@@ -65,12 +59,6 @@ export const useInfiniteCoordinateHistory = (
 // Custom hook for auto-paginated H3 coordinate history
 export const useInfiniteCoordinateHistoryH3 = (
   baseFilters: CoordinateHistoryH3Filters,
-  windowBounds: {
-    north: number;
-    south: number;
-    east: number;
-    west: number;
-  } | null,
   enabled: boolean = true
 ) => {
   const {
@@ -83,16 +71,13 @@ export const useInfiniteCoordinateHistoryH3 = (
     error,
     refetch,
   } = useInfiniteQuery<CoordinateHistoryH3Response>({
-    queryKey: ['coordinateHistoryH3Infinite', baseFilters, windowBounds],
+    queryKey: ['coordinateHistoryH3Infinite', baseFilters],
     queryFn: ({ pageParam = 1 }) =>
-      getCoordinateHistoryH3(
-        {
-          ...baseFilters,
-          page: String(pageParam),
-          resolution: baseFilters.resolution ?? String(9),
-        },
-        windowBounds
-      ),
+      getCoordinateHistoryH3({
+        ...baseFilters,
+        page: String(pageParam),
+        resolution: baseFilters.resolution ?? String(9),
+      }),
     getNextPageParam: (lastPage: CoordinateHistoryH3Response) =>
       lastPage.pagination.hasNext ? lastPage.pagination.page + 1 : undefined,
     initialPageParam: 1,

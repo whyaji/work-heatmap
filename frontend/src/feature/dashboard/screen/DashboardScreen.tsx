@@ -56,7 +56,7 @@ import {
 } from 'react-icons/fi';
 import { MapContainer, TileLayer } from 'react-leaflet';
 
-import { MapBoundsListener, ZoomControls, ZoomListener } from '@/components/maps-location';
+import { ZoomControls, ZoomListener } from '@/components/maps-location';
 import {
   getEstatesAfdeling,
   getGeoJsonBlok,
@@ -69,22 +69,15 @@ import { getUsers } from '@/lib/api/userApi';
 import { useAuth } from '@/lib/auth';
 import { useLoading } from '@/lib/loading/useLoading.hook';
 import { AreaType } from '@/types/area.type';
-import { CoordinateHistoryType, H3Type } from '@/types/coordinateHistory.type';
+import { CoordinateHistoryType } from '@/types/coordinateHistory.type';
 
 import { BloksPolygonLayer } from '../components/bloks-polygon-layer/BloksPolygonLayer';
-import {
-  HeatmapCoordinateDataProcessor,
-  HeatmapH3DataProcessor,
-} from '../components/maps-heatmap/MapsHeatmaps';
+import { HeatmapCoordinateDataProcessor } from '../components/maps-heatmap/MapsHeatmaps';
 import { MapsHeatmapLayerControl } from '../components/maps-heatmap-layer-control/MapsHeatmapLayerControl';
 import { RefreshButton } from '../components/refresh-button/RefreshButton';
 import listMapTileOptions from '../constants/listMapTileOptions';
-import {
-  useInfiniteCoordinateHistory,
-  useInfiniteCoordinateHistoryH3,
-} from '../hooks/useInfiniteFetchCoordinate.hook';
+import { useInfiniteCoordinateHistory } from '../hooks/useInfiniteFetchCoordinate.hook';
 import { BlokGeoJSON } from '../types/blockGeoJson.type';
-import { mergeH3Data } from '../utils/mergeH3Data';
 
 // Animation keyframes
 const pulse = keyframes`
@@ -115,12 +108,6 @@ export const DashboardScreen = () => {
 
   const hasAppliedFilters = useRef(false);
   const hasPressFilter = useRef(false);
-  const [windowBounds, setWindowBounds] = useState<{
-    north: number;
-    south: number;
-    east: number;
-    west: number;
-  } | null>(null);
 
   // onFirstMount set if not mobile then open sidebar just run on first time
   const isFirstMount = useRef(true);
@@ -193,7 +180,6 @@ export const DashboardScreen = () => {
   const [selectedAfdelingId, setSelectedAfdelingId] = useState<string>('');
   const [selectedGeoJsonBlok, setSelectedGeoJsonBlok] = useState<BlokGeoJSON | null>(null);
   const [coordinateHistoryData, setCoordinateHistoryData] = useState<CoordinateHistoryType[]>([]);
-  const [coordinateHistoryH3Data, setCoordinateHistoryH3Data] = useState<H3Type[]>([]);
 
   const bgColor = useColorModeValue('gray.50', 'gray.900');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
@@ -246,7 +232,8 @@ export const DashboardScreen = () => {
 
   const dataAfdeling = !isErrorAfdelings && afdelings && 'data' in afdelings ? afdelings.data : [];
 
-  const isUsingH3 = mapZoom < 11;
+  // const isUsingH3 = mapZoom < 11;
+  const isUsingH3 = false;
 
   // Auto-paginated coordinate history query
   const {
@@ -254,46 +241,23 @@ export const DashboardScreen = () => {
     isLoading: isLoadingCoordinateHistory,
     isError: isErrorCoordinateHistory,
     refetch: refetchCoordinateHistory,
+    isComplete: isCompleteCoordinateHistory,
   } = useInfiniteCoordinateHistory(
     filters,
-    windowBounds,
-    hasAppliedFilters.current && windowBounds !== null && !isUsingH3
-  );
-
-  // Auto-paginated H3 coordinate history query
-  const {
-    data: allH3Data,
-    h3Stats,
-    isLoading: isLoadingCoordinateHistoryH3,
-    isError: isErrorCoordinateHistoryH3,
-    refetch: refetchCoordinateHistoryH3,
-    isComplete: isCompleteH3,
-  } = useInfiniteCoordinateHistoryH3(
-    { ...filters, resolution: String(9) },
-    windowBounds,
-    hasAppliedFilters.current && windowBounds !== null && isUsingH3
+    hasAppliedFilters.current && !isUsingH3 && coordinateHistoryData.length === 0
   );
 
   // Update state when data is completely loaded
   useEffect(() => {
-    if (!isLoadingCoordinateHistory && allCoordinateData.length > 0) {
+    if (!isLoadingCoordinateHistory) {
       setCoordinateHistoryData(allCoordinateData);
+    }
+    if (isCompleteCoordinateHistory) {
+      hasAppliedFilters.current = false;
     }
   }, [allCoordinateData, isLoadingCoordinateHistory]);
 
-  useEffect(() => {
-    if (!isLoadingCoordinateHistoryH3 && allH3Data.length > 0) {
-      if (isCompleteH3) {
-        // Apply merging logic to H3 data to combine entries with same h3Index
-        const mergedH3Data = mergeH3Data(allH3Data);
-        setCoordinateHistoryH3Data(mergedH3Data);
-      } else {
-        setCoordinateHistoryH3Data(allH3Data);
-      }
-    }
-  }, [allH3Data, isLoadingCoordinateHistoryH3, isCompleteH3]);
-
-  const refreshingCoordData = isLoadingCoordinateHistory || isLoadingCoordinateHistoryH3;
+  const refreshingCoordData = isLoadingCoordinateHistory;
 
   const { data: usersResponse, isError: isErrorUsers } = useQuery({
     queryKey: ['users'],
@@ -363,11 +327,7 @@ export const DashboardScreen = () => {
       return;
     }
 
-    if (isUsingH3) {
-      await refetchCoordinateHistoryH3();
-    } else {
-      await refetchCoordinateHistory();
-    }
+    await refetchCoordinateHistory();
     toast({
       title: 'Data Refreshed',
       description: 'All tracking data has been updated.',
@@ -516,23 +476,12 @@ export const DashboardScreen = () => {
     let isLoading = false;
     let dataSource = '';
 
-    if (isUsingH3) {
-      isLoading = isLoadingCoordinateHistoryH3;
-      dataSource = 'H3';
+    isLoading = isLoadingCoordinateHistory;
+    dataSource = 'Coordinates';
 
-      if (h3Stats) {
-        // Use server-side calculated stats for H3 (more accurate)
-        totalCoordinates = h3Stats.totalCoordinates ?? 0;
-        uniqueUsers = h3Stats.totalUniqueUsers ?? 0;
-      }
-    } else {
-      isLoading = isLoadingCoordinateHistory;
-      dataSource = 'Coordinates';
-
-      if (allCoordinateData.length > 0) {
-        totalCoordinates = allCoordinateData.length;
-        uniqueUsers = new Set(allCoordinateData.map((coord) => coord.user_id)).size;
-      }
+    if (allCoordinateData.length > 0) {
+      totalCoordinates = allCoordinateData.length;
+      uniqueUsers = new Set(allCoordinateData.map((coord) => coord.user_id)).size;
     }
 
     return {
@@ -559,14 +508,7 @@ export const DashboardScreen = () => {
       totalCoordinates,
       uniqueUsers,
     };
-  }, [
-    isUsingH3,
-    allCoordinateData,
-    allH3Data,
-    h3Stats,
-    isLoadingCoordinateHistory,
-    isLoadingCoordinateHistoryH3,
-  ]);
+  }, [isUsingH3, allCoordinateData, isLoadingCoordinateHistory]);
 
   const handleFullScreen = () => {
     if (!document.fullscreenElement) {
@@ -578,7 +520,7 @@ export const DashboardScreen = () => {
     }
   };
 
-  if (isErrorCoordinateHistory || isErrorUsers || isErrorCoordinateHistoryH3) {
+  if (isErrorCoordinateHistory || isErrorUsers) {
     return (
       <Box minH="100vh" bg={bgColor} p={8}>
         <Alert status="error">
@@ -1104,32 +1046,12 @@ export const DashboardScreen = () => {
           )}
           <ZoomControls onZoomIn={handleZoomIn} onZoomOut={handleZoomOut} />
           <ZoomListener onZoomChange={setMapZoom} />
-          {(isUsingH3 || (coordinateHistoryData.length === 0 && isLoadingCoordinateHistory)) && (
-            <HeatmapH3DataProcessor
-              data={coordinateHistoryH3Data}
-              showHeatmap={showHeatmap}
-              showH3Markers={showMarker}
-              radius={radius}
-            />
-          )}
-          {(!isUsingH3 ||
-            (coordinateHistoryH3Data.length === 0 && isLoadingCoordinateHistoryH3)) && (
-            <HeatmapCoordinateDataProcessor
-              data={coordinateHistoryData}
-              showHeatmap={showHeatmap}
-              showClusteredMarkers={showClusteredMarkers}
-              showIndividualMarkers={showMarker}
-              radius={radius}
-            />
-          )}
-          <MapBoundsListener
-            windowBounds={windowBounds}
-            setWindowBounds={setWindowBounds}
-            onWindowBoundsChange={() => {
-              if (hasPressFilter.current) {
-                hasAppliedFilters.current = true;
-              }
-            }}
+          <HeatmapCoordinateDataProcessor
+            data={coordinateHistoryData}
+            showHeatmap={showHeatmap}
+            showClusteredMarkers={showClusteredMarkers}
+            showIndividualMarkers={showMarker}
+            radius={radius}
           />
         </MapContainer>
       </Box>
