@@ -60,6 +60,7 @@ export const MapsHeatmapLayerControl: FC<{
   setShowHeatmap: (show: boolean) => void;
   setShowClusteredMarkers: (show: boolean) => void;
   setShowMarker: (show: boolean) => void;
+  heatmapGradient?: Record<number, string>;
 }> = ({
   areaOpacity,
   setAreaOpacity,
@@ -72,6 +73,7 @@ export const MapsHeatmapLayerControl: FC<{
   setShowHeatmap,
   setShowClusteredMarkers,
   setShowMarker,
+  heatmapGradient = heatmapConfig.gradient,
 }) => {
   const { isOpen, onToggle } = useDisclosure({ defaultIsOpen: true });
   const isMobile = useBreakpointValue({ base: true, md: false });
@@ -92,8 +94,6 @@ export const MapsHeatmapLayerControl: FC<{
   const activeLayers = [showHeatmap, showClusteredMarkers && !isUsingH3, showMarker].filter(
     Boolean
   ).length;
-
-  const heatmapGradient = heatmapConfig.gradient;
   // Create gradient background for range
   const createGradientBackground = (startColor: string, endColor: string) => {
     return `linear-gradient(to right, ${startColor}, ${endColor})`;
@@ -101,16 +101,16 @@ export const MapsHeatmapLayerControl: FC<{
 
   const ranges = [
     {
-      legend: '0.0 - 0.4',
-      background: createGradientBackground(heatmapGradient['0'], heatmapGradient['0.4']),
+      legend: '1',
+      background: createGradientBackground(heatmapGradient['0.6'], heatmapGradient['0.7']),
     },
     {
-      legend: '0.4 - 0.6',
-      background: createGradientBackground(heatmapGradient['0.4'], heatmapGradient['0.6']),
+      legend: '2',
+      background: createGradientBackground(heatmapGradient['0.7'], heatmapGradient['0.9']),
     },
     {
-      legend: '0.6 - 1.0',
-      background: createGradientBackground(heatmapGradient['0.6'], heatmapGradient['1']),
+      legend: '3',
+      background: createGradientBackground(heatmapGradient['0.9'], heatmapGradient['1']),
     },
   ];
 
@@ -435,9 +435,6 @@ export const MapsHeatmapLayerControl: FC<{
                 {ranges.map((range) => (
                   <VStack spacing={1} flex="1" key={range.legend}>
                     <Box w="100%" h="10px" background={range.background} borderRadius="4px" />
-                    <Text fontSize="xs" color={textColor} fontWeight="500">
-                      {range.legend}
-                    </Text>
                   </VStack>
                 ))}
               </HStack>
