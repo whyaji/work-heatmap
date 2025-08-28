@@ -258,6 +258,7 @@ export const coordinateHistoryRoute = new Hono()
         resolution: h3Cell.resolution,
         area: h3Cell.area,
         count: h3Cell.count,
+        users: Array.from(h3Cell.users),
         uniqueUsers: h3Cell.users.size,
         firstSeen: h3Cell.firstSeen,
         lastSeen: h3Cell.lastSeen,

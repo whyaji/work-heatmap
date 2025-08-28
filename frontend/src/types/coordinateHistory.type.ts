@@ -18,6 +18,7 @@ export type H3Type = {
   resolution?: number;
   area?: number;
   count: number;
+  users: number[];
   uniqueUsers: number;
   firstSeen: string;
   lastSeen: string;

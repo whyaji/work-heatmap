@@ -83,6 +83,7 @@ import {
   useInfiniteCoordinateHistory,
   useInfiniteCoordinateHistoryH3,
 } from '../hooks/useInfiniteFetchCoordinate.hook';
+import { mergeH3Data } from '../utils/mergeH3Data';
 
 // Animation keyframes
 const pulse = keyframes`
@@ -125,18 +126,8 @@ export const DashboardScreen = () => {
   }, [isMobile, onSidebarOpen]);
 
   const [blokOpacity, setBlokOpacity] = useState(0.2);
-  const [nearbyDistance, setNearbyDistance] = useState(50);
-  const [tempNearbyDistance, setTempNearbyDistance] = useState(50);
   const [radius, setRadius] = useState(30);
   const [tempRadius, setTempRadius] = useState(30);
-
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      setNearbyDistance(tempNearbyDistance);
-    }, 800);
-
-    return () => clearTimeout(timeout);
-  }, [tempNearbyDistance]);
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -183,7 +174,7 @@ export const DashboardScreen = () => {
     afdeling: '',
   });
 
-  const lastThirtyDays = moment().subtract(30, 'days').hour(0).minute(0).format('YYYY-MM-DDTHH:mm');
+  const lastThirtyDays = moment().subtract(7, 'days').hour(0).minute(0).format('YYYY-MM-DDTHH:mm');
   const endTodayWithTime = moment().hour(23).minute(59).second(59).format('YYYY-MM-DDTHH:mm');
 
   const [startDate, setStartDate] = useState(lastThirtyDays);
@@ -249,7 +240,7 @@ export const DashboardScreen = () => {
 
   const dataAfdeling = !isErrorAfdelings && afdelings && 'data' in afdelings ? afdelings.data : [];
 
-  const isUsingH3 = mapZoom < 14;
+  const isUsingH3 = mapZoom < 11;
 
   // Auto-paginated coordinate history query
   const {
@@ -270,6 +261,7 @@ export const DashboardScreen = () => {
     isLoading: isLoadingCoordinateHistoryH3,
     isError: isErrorCoordinateHistoryH3,
     refetch: refetchCoordinateHistoryH3,
+    isComplete: isCompleteH3,
   } = useInfiniteCoordinateHistoryH3(
     { ...filters, resolution: String(9) },
     windowBounds,
@@ -285,7 +277,13 @@ export const DashboardScreen = () => {
 
   useEffect(() => {
     if (!isLoadingCoordinateHistoryH3 && allH3Data.length > 0) {
-      setCoordinateHistoryH3Data(allH3Data);
+      if (isCompleteH3) {
+        // Apply merging logic to H3 data to combine entries with same h3Index
+        const mergedH3Data = mergeH3Data(allH3Data);
+        setCoordinateHistoryH3Data(mergedH3Data);
+      } else {
+        setCoordinateHistoryH3Data(allH3Data);
+      }
     }
   }, [allH3Data, isLoadingCoordinateHistoryH3]);
 
@@ -950,18 +948,6 @@ export const DashboardScreen = () => {
                   <Text fontSize="sm" fontWeight="semibold" color="gray.700">
                     Customize Heatmap
                   </Text>
-                  {/* input number for nearby distance */}
-                  <Text fontSize="xs" color="gray.500">
-                    Nearby Distance (meter)
-                  </Text>
-                  <Input
-                    type="number"
-                    min={1}
-                    value={String(tempNearbyDistance)}
-                    onChange={(e) => setTempNearbyDistance(Number(e.target.value))}
-                    size="sm"
-                    borderRadius="lg"
-                  />
 
                   {/* input number for radius heatmap point */}
                   <Text fontSize="xs" color="gray.500">
@@ -1120,7 +1106,6 @@ export const DashboardScreen = () => {
               showHeatmap={showHeatmap}
               showClusteredMarkers={showClusteredMarkers}
               showIndividualMarkers={showMarker}
-              nearbyDistance={nearbyDistance}
               radius={radius}
             />
           )}
