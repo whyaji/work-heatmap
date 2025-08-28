@@ -1,6 +1,8 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
 import { RouterProvider } from '@tanstack/react-router';
-import { LoadingScreen } from './LoadingScreen';
+import React, { useEffect, useState } from 'react';
+
+import { useLoading } from '../loading/useLoading.hook';
+import { AuthContext } from './useAuth.hook';
 
 export interface User {
   id: number;
@@ -20,27 +22,18 @@ export interface AuthState {
   token: string | null;
 }
 
-interface AuthContextType extends AuthState {
+export interface AuthContextType extends AuthState {
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
   setUser: (user: User) => void;
 }
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
-
 interface AuthProviderProps {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   router: any; // Router instance
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ router }) => {
+  const { showLoading, hideLoading } = useLoading();
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
     isAuthenticated: false,
@@ -49,6 +42,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ router }) => {
   });
 
   useEffect(() => {
+    // Show loading while checking for existing token
+    showLoading();
+
     // Check for existing token on app load
     const token = localStorage.getItem('auth_token');
     const userData = localStorage.getItem('user_data');
@@ -62,27 +58,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ router }) => {
           isLoading: false,
           token,
         });
-      } catch (error) {
+      } catch {
         // Invalid stored data, clear it
         localStorage.removeItem('auth_token');
         localStorage.removeItem('user_data');
-        setAuthState((prev) => ({ ...prev, isLoading: false }));
       }
-    } else {
-      setAuthState((prev) => ({ ...prev, isLoading: false }));
     }
-  }, []);
+
+    // Hide loading when authentication check is complete
+    hideLoading();
+  }, [showLoading, hideLoading]);
 
   const login = async (username: string, password: string) => {
     try {
-      setAuthState((prev) => ({ ...prev, isLoading: true }));
+      showLoading();
 
       // Import login function dynamically to avoid circular dependency
       const { login: loginApi } = await import('@/lib/api/authApi');
-      const response: any = await loginApi(username, password);
+      const response = await loginApi(username, password);
 
       // Check if login was successful and extract data
-      if (response.success && response.data) {
+      if ('success' in response && response.success && 'data' in response && response.data) {
         const { user, token } = response.data;
 
         // Store in localStorage
@@ -96,11 +92,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ router }) => {
           token,
         });
       } else {
-        throw new Error(response.error || 'Login failed');
+        throw new Error('Login failed');
       }
-    } catch (error) {
-      setAuthState((prev) => ({ ...prev, isLoading: false }));
-      throw error;
+    } catch {
+      throw new Error('Login failed');
+    } finally {
+      hideLoading();
     }
   };
 
@@ -127,11 +124,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ router }) => {
     logout,
     setUser,
   };
-
-  // Show loading screen while checking authentication
-  if (authState.isLoading) {
-    return <LoadingScreen message="Checking authentication..." />;
-  }
 
   return (
     <AuthContext.Provider value={value}>

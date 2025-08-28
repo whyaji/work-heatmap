@@ -1,6 +1,7 @@
-import { PaginationType } from '@/types/pagination.type';
-import { api } from './api';
 import { CoordinateHistoryType, H3StatsType, H3Type } from '@/types/coordinateHistory.type';
+import { PaginationType } from '@/types/pagination.type';
+
+import { api } from './api';
 
 const coordinateHistoryApi = api['coordinate-history'];
 

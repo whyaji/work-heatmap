@@ -1,14 +1,15 @@
 import {
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  Center,
-  VStack,
-  Image,
-  Text,
   Box,
+  Center,
+  Image,
+  Modal,
+  ModalContent,
+  ModalOverlay,
+  Text,
+  VStack,
 } from '@chakra-ui/react';
 import { keyframes } from '@emotion/react';
+
 import { useLoadingStore } from '../store/loadingStore';
 
 const pulse = keyframes`
@@ -44,7 +45,7 @@ const shimmer = keyframes`
 `;
 
 export const LoadingProvider = () => {
-  const isLoading = useLoadingState();
+  const isLoading = useLoadingStore((state) => state.isLoading);
 
   return (
     <Modal isOpen={isLoading} onClose={() => {}} isCentered>
@@ -129,17 +130,4 @@ export const LoadingProvider = () => {
       </ModalContent>
     </Modal>
   );
-};
-
-// Custom hook for easy access to loading actions
-export const useLoading = () => {
-  const showLoading = useLoadingStore((state) => state.showLoading);
-  const hideLoading = useLoadingStore((state) => state.hideLoading);
-
-  return { showLoading, hideLoading };
-};
-
-// Optional: Hook to get loading state (for conditional rendering)
-export const useLoadingState = () => {
-  return useLoadingStore((state) => state.isLoading);
 };

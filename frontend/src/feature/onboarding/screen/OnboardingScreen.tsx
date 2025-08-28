@@ -1,33 +1,33 @@
 import {
+  Badge,
   Box,
   Button,
+  Card,
+  CardBody,
+  Center,
   Container,
   Heading,
-  Text,
-  VStack,
   HStack,
   Icon,
   SimpleGrid,
-  Card,
-  CardBody,
-  Badge,
+  Text,
   useColorModeValue,
-  Center,
+  VStack,
 } from '@chakra-ui/react';
 import { keyframes } from '@emotion/react';
 import { Link } from '@tanstack/react-router';
 import {
-  FiMap,
-  FiUsers,
   FiActivity,
-  FiShield,
-  FiNavigation,
+  FiBarChart2,
   FiCheckCircle,
   FiEye,
+  FiMap,
+  FiNavigation,
+  FiShield,
   FiTarget,
-  FiZap,
   FiTrendingUp,
-  FiBarChart2,
+  FiUsers,
+  FiZap,
 } from 'react-icons/fi';
 
 // Animation keyframes

@@ -7,16 +7,15 @@
     "start": "vite",
     "build": "vite build && tsc",
     "serve": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix"
   },
   "dependencies": {
     "@chakra-ui/react": "2",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@hookform/resolvers": "^5.2.1",
-    "@tailwindcss/cli": "^4.1.12",
-    "@tailwindcss/postcss": "^4.1.12",
-    "@tailwindcss/vite": "^4.1.12",
     "@tanstack/react-devtools": "^0.2.2",
     "@tanstack/react-query": "^5.85.5",
     "@tanstack/react-router": "^1.131.27",
@@ -33,8 +32,6 @@
     "react-icons": "^5.5.0",
     "react-leaflet": "^5.0.0",
     "react-leaflet-markercluster": "^5.0.0-rc.0",
-    "tailwindcss": "^4.1.12",
-    "tailwindcss-animate": "^1.0.7",
     "zod": "^4.0.17",
     "zustand": "^5.0.8"
   },

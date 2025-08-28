@@ -1,49 +1,50 @@
 import {
+  Badge,
   Box,
   Button,
-  Container,
-  Heading,
-  Text,
-  VStack,
-  HStack,
-  Icon,
   Card,
   CardBody,
+  Container,
+  Divider,
+  Flex,
   FormControl,
-  FormLabel,
   FormErrorMessage,
+  FormLabel,
+  Heading,
+  HStack,
+  Icon,
+  IconButton,
   Input,
   InputGroup,
   InputLeftElement,
   InputRightElement,
-  IconButton,
-  Badge,
-  SimpleGrid,
-  useColorModeValue,
-  Flex,
-  Divider,
   Link,
+  SimpleGrid,
+  Text,
+  useColorModeValue,
   useToast,
+  VStack,
 } from '@chakra-ui/react';
+import { keyframes } from '@emotion/react';
+import { useNavigate } from '@tanstack/react-router';
+import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
 import {
-  FiUser,
-  FiLock,
+  FiActivity,
+  FiCheckCircle,
   FiEye,
   FiEyeOff,
+  FiLock,
   FiMap,
-  FiActivity,
-  FiUsers,
   FiShield,
-  FiCheckCircle,
   FiTarget,
+  FiUser,
+  FiUsers,
   FiZap,
 } from 'react-icons/fi';
-import { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { keyframes } from '@emotion/react';
-import { Route } from '@/routes/login';
-import { useNavigate } from '@tanstack/react-router';
+
 import { useAuth } from '@/lib/auth';
+import { Route } from '@/routes/login';
 
 // Animation keyframes
 const float = keyframes`
@@ -74,6 +75,7 @@ export const LoginScreen = () => {
   const [showPassword, setShowPassword] = useState(false);
   const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const search: any = Route.useSearch();
   const toast = useToast();
 
@@ -88,7 +90,7 @@ export const LoginScreen = () => {
   useEffect(() => {
     if (isAuthenticated) {
       const redirectTo = search.redirect || '/dashboard';
-      navigate({ to: redirectTo as any });
+      navigate({ to: redirectTo });
     }
   }, [isAuthenticated, navigate, search.redirect]);
 
@@ -108,8 +110,8 @@ export const LoginScreen = () => {
 
       // Redirect to the intended page or dashboard
       const redirectTo = search.redirect || '/dashboard';
-      window.location.href = redirectTo as any;
-    } catch (error) {
+      window.location.href = redirectTo;
+    } catch {
       toast({
         title: 'Login Failed',
         description: 'Invalid credentials. Please try again.',

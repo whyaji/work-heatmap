@@ -1,64 +1,61 @@
+import 'leaflet/dist/leaflet.css';
+
 import {
-  Box,
-  Button,
-  Text,
-  VStack,
-  HStack,
-  Card,
-  CardBody,
-  Stat,
-  StatLabel,
-  StatNumber,
-  StatHelpText,
-  Avatar,
-  Icon,
-  Flex,
-  useToast,
-  useColorModeValue,
-  IconButton,
-  Menu,
-  MenuButton,
-  MenuList,
-  MenuItem,
-  Select,
-  Input,
-  FormControl,
-  FormLabel,
   Alert,
+  AlertDescription,
   AlertIcon,
   AlertTitle,
-  AlertDescription,
-  Tooltip,
-  useDisclosure,
-  Divider,
+  Avatar,
+  Box,
+  Button,
+  Card,
+  CardBody,
   Collapse,
+  Divider,
+  Flex,
+  FormControl,
+  FormLabel,
+  HStack,
+  Icon,
+  IconButton,
+  Input,
+  Menu,
+  MenuButton,
+  MenuItem,
+  MenuList,
+  Select,
+  Stat,
+  StatHelpText,
+  StatLabel,
+  StatNumber,
+  Text,
+  Tooltip,
   useBreakpointValue,
+  useColorModeValue,
+  useDisclosure,
+  useToast,
+  VStack,
 } from '@chakra-ui/react';
-import {
-  FiUsers,
-  FiActivity,
-  FiMapPin,
-  FiShield,
-  FiFilter,
-  FiCalendar,
-  FiUser,
-  FiMaximize,
-  FiMinimize,
-  FiMenu,
-  FiChevronDown,
-} from 'react-icons/fi';
-import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { keyframes } from '@emotion/react';
-import { useAuth } from '@/lib/auth';
 import { useQuery } from '@tanstack/react-query';
-import { CoordinateHistoryFilters } from '@/lib/api/coordinateHistoryApi';
-import { getUsers } from '@/lib/api/userApi';
-import 'leaflet/dist/leaflet.css';
+import { LatLngExpression } from 'leaflet';
+import moment from 'moment';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  HeatmapCoordinateDataProcessor,
-  HeatmapH3DataProcessor,
-} from '../components/maps-heatmap/MapsHeatmaps';
+  FiActivity,
+  FiCalendar,
+  FiChevronDown,
+  FiFilter,
+  FiMapPin,
+  FiMaximize,
+  FiMenu,
+  FiMinimize,
+  FiShield,
+  FiUser,
+  FiUsers,
+} from 'react-icons/fi';
 import { MapContainer, TileLayer } from 'react-leaflet';
+
 import { MapBoundsListener, ZoomControls, ZoomListener } from '@/components/maps-location';
 import {
   getEstatesAfdeling,
@@ -67,22 +64,26 @@ import {
   getRegionalsWilayah,
   getWilayahsEstate,
 } from '@/lib/api/areaApi';
-import { BlokGeoJSON } from '../types/blockGeoJson.type';
-import { BloksPolygonLayer } from '../components/bloks-polygon-layer/BloksPolygonLayer';
-import { CoordinateHistoryType, H3Type } from '@/types/coordinateHistory.type';
-import { LatLngExpression } from 'leaflet';
-import {
-  listMapTileOptions,
-  MapsHeatmapLayerControl,
-} from '../components/maps-heatmap-layer-control/MapsHeatmapLayerControl';
-import { useLoading } from '@/lib/loading/LoadingProvider';
-import { RefreshButton } from '../components/refresh-button/RefreshButton';
-import moment from 'moment';
+import { CoordinateHistoryFilters } from '@/lib/api/coordinateHistoryApi';
+import { getUsers } from '@/lib/api/userApi';
+import { useAuth } from '@/lib/auth';
+import { useLoading } from '@/lib/loading/useLoading.hook';
 import { AreaType } from '@/types/area.type';
+import { CoordinateHistoryType, H3Type } from '@/types/coordinateHistory.type';
+
+import { BloksPolygonLayer } from '../components/bloks-polygon-layer/BloksPolygonLayer';
+import {
+  HeatmapCoordinateDataProcessor,
+  HeatmapH3DataProcessor,
+} from '../components/maps-heatmap/MapsHeatmaps';
+import { MapsHeatmapLayerControl } from '../components/maps-heatmap-layer-control/MapsHeatmapLayerControl';
+import { RefreshButton } from '../components/refresh-button/RefreshButton';
+import listMapTileOptions from '../constants/listMapTileOptions';
 import {
   useInfiniteCoordinateHistory,
   useInfiniteCoordinateHistoryH3,
 } from '../hooks/useInfiniteFetchCoordinate.hook';
+import { BlokGeoJSON } from '../types/blockGeoJson.type';
 import { mergeH3Data } from '../utils/mergeH3Data';
 
 // Animation keyframes
@@ -103,7 +104,12 @@ export const DashboardScreen = () => {
   const toast = useToast();
   const [isFullScreen, setIsFullScreen] = useState(false);
   const isMobile = useBreakpointValue({ base: true, md: false });
-  const { isOpen: isSidebarOpen, onToggle: toggleSidebar, onOpen: onSidebarOpen } = useDisclosure();
+  const {
+    isOpen: isSidebarOpen,
+    onToggle: toggleSidebar,
+    onOpen: onSidebarOpen,
+    onClose: onSidebarClose,
+  } = useDisclosure();
   const [sidebarWidth, setSidebarWidth] = useState(320);
   const [isResizing, setIsResizing] = useState(false);
 
@@ -285,7 +291,7 @@ export const DashboardScreen = () => {
         setCoordinateHistoryH3Data(allH3Data);
       }
     }
-  }, [allH3Data, isLoadingCoordinateHistoryH3]);
+  }, [allH3Data, isLoadingCoordinateHistoryH3, isCompleteH3]);
 
   const refreshingCoordData = isLoadingCoordinateHistory || isLoadingCoordinateHistoryH3;
 
@@ -413,6 +419,7 @@ export const DashboardScreen = () => {
             estates.map((estate) => getGeoJsonBlok(estate, afdeling))
           );
           const geoJsonListSuccess = geoJsonListResponse.filter(
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (geoJson): geoJson is { type: string; features: any[] } =>
               'type' in geoJson && 'features' in geoJson && geoJson.features.length > 0
           );
@@ -425,7 +432,7 @@ export const DashboardScreen = () => {
               : null;
           setSelectedGeoJsonBlok(geoJson as BlokGeoJSON);
         }
-      } catch (error) {
+      } catch {
         toast({
           title: 'Error',
           description: 'Gagal mengambil data blok',
@@ -749,7 +756,7 @@ export const DashboardScreen = () => {
                       borderRadius="lg"
                       disabled={isLoadingRegionals}
                       placeholder="Select Regional">
-                      {dataRegional.map((regional: any) => (
+                      {dataRegional.map((regional) => (
                         <option key={regional.id} value={regional.id.toString()}>
                           {regional.nama}
                         </option>
@@ -770,7 +777,7 @@ export const DashboardScreen = () => {
                       borderRadius="lg"
                       disabled={isLoadingWilayahs || isLoadingRegionals}
                       placeholder="Select Wilayah">
-                      {dataWilayah.map((wilayah: any) => (
+                      {dataWilayah.map((wilayah) => (
                         <option key={wilayah.id} value={wilayah.id.toString()}>
                           {wilayah.nama}
                         </option>
@@ -790,7 +797,7 @@ export const DashboardScreen = () => {
                       borderRadius="lg"
                       disabled={isLoadingEstates || isLoadingWilayahs || isLoadingRegionals}
                       placeholder="Select Estate">
-                      {dataEstate.map((estate: any) => (
+                      {dataEstate.map((estate) => (
                         <option key={estate.id} value={estate.id.toString()}>
                           {estate.nama}
                         </option>
@@ -812,7 +819,7 @@ export const DashboardScreen = () => {
                         isLoadingRegionals
                       }
                       placeholder="Select Afdeling">
-                      {dataAfdeling.map((afdeling: any) => (
+                      {dataAfdeling.map((afdeling) => (
                         <option key={afdeling.id} value={afdeling.id.toString()}>
                           {afdeling.nama}
                         </option>
@@ -911,6 +918,7 @@ export const DashboardScreen = () => {
                         e.preventDefault();
                         e.stopPropagation();
 
+                        if (isMobile) onSidebarClose();
                         hasAppliedFilters.current = false;
                         hasPressFilter.current = true;
                         handleFilterChange();
@@ -1081,7 +1089,12 @@ export const DashboardScreen = () => {
         <MapContainer
           center={mapCenter}
           zoom={mapZoom}
-          className="w-full h-full z-10"
+          style={{
+            width: '100%',
+            height: '100%',
+            zIndex: 10,
+          }}
+          minZoom={2}
           zoomControl={false}
           scrollWheelZoom={!isResizing}
           attributionControl={false}>

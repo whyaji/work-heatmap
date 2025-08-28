@@ -1,25 +1,17 @@
-import { CircleMarker, Popup } from 'react-leaflet';
-import { FC, useMemo } from 'react';
+import './MapsHeatmaps.css';
+
 import { Box, Text } from '@chakra-ui/react';
 import { HeatmapLayerFactory } from '@vgrid/react-leaflet-heatmap-layer';
-import { CoordinateHistoryType, H3Type } from '@/types/coordinateHistory.type';
-import MarkerClusterGroup from 'react-leaflet-markercluster';
 import L from 'leaflet';
+import { FC, useMemo } from 'react';
+import { CircleMarker, Popup } from 'react-leaflet';
+import MarkerClusterGroup from 'react-leaflet-markercluster';
+
+import { CoordinateHistoryType, H3Type } from '@/types/coordinateHistory.type';
+
+import heatmapDefaultConfig from '../../constants/heatmapConfig';
 
 const HeatmapLayer = HeatmapLayerFactory<[number, number, number]>();
-
-export const heatmapConfig = {
-  radius: 30,
-
-  gradient: {
-    0.0: 'rgba(0, 255, 119, 0.1)',
-    0.6: 'rgba(119, 255, 0, 0.8)',
-    0.7: 'rgb(187, 255, 0)',
-    0.8: 'rgb(221, 255, 0)',
-    0.9: 'rgb(255, 140, 0)',
-    1.0: 'rgba(255, 0, 0, 1)', // Merah solid
-  },
-};
 
 // Heatmap data processing component
 export const HeatmapCoordinateDataProcessor: FC<{
@@ -37,6 +29,7 @@ export const HeatmapCoordinateDataProcessor: FC<{
   radius,
   gradient,
 }) => {
+  const heatmapConfig = heatmapDefaultConfig;
   // Convert to heatmap format: [lat, lng, intensity]
   const heatmapPoints = useMemo(() => {
     // Create more granular heatmap points from individual coordinates
@@ -105,9 +98,9 @@ export const HeatmapCoordinateDataProcessor: FC<{
           gradient={gradient ?? heatmapConfig.gradient}
           radius={radius ?? heatmapConfig.radius}
           points={heatmapPoints}
-          longitudeExtractor={(m: any) => m[1]}
-          latitudeExtractor={(m: any) => m[0]}
-          intensityExtractor={(m: any) => parseFloat(m[2])}
+          longitudeExtractor={(m) => m[1]}
+          latitudeExtractor={(m) => m[0]}
+          intensityExtractor={(m) => m[2]}
         />
       )}
       {/* Clustered individual markers for detailed view */}
@@ -121,11 +114,13 @@ export const HeatmapCoordinateDataProcessor: FC<{
           removeOutsideVisibleBounds={true}
           animate={true}
           animateAddingMarkers={true}
-          iconCreateFunction={(cluster: any) => {
+          iconCreateFunction={(cluster: { getChildCount: () => number }) => {
             const count = cluster.getChildCount();
             let className = 'marker-cluster-small';
 
-            if (count > 100) {
+            if (count > 50) {
+              className = 'marker-cluster-extra-large';
+            } else if (count > 20) {
               className = 'marker-cluster-large';
             } else if (count > 10) {
               className = 'marker-cluster-medium';
@@ -152,6 +147,7 @@ export const HeatmapH3DataProcessor: FC<{
   radius?: number;
   gradient?: Record<number, string>;
 }> = ({ data, showHeatmap = true, showH3Markers = true, radius, gradient }) => {
+  const heatmapConfig = heatmapDefaultConfig;
   // Process H3 data for heatmap visualization
   const heatmapPoints = useMemo(() => {
     return data.map((h3Item) => {
@@ -221,9 +217,9 @@ export const HeatmapH3DataProcessor: FC<{
           gradient={gradient ?? heatmapConfig.gradient}
           radius={radius ?? heatmapConfig.radius}
           points={heatmapPoints}
-          longitudeExtractor={(m: any) => m[1]}
-          latitudeExtractor={(m: any) => m[0]}
-          intensityExtractor={(m: any) => parseFloat(m[2])}
+          longitudeExtractor={(m) => m[1]}
+          latitudeExtractor={(m) => m[0]}
+          intensityExtractor={(m) => m[2]}
         />
       )}
       {/* H3 Cell Markers */}

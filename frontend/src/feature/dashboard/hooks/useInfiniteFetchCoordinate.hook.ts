@@ -1,17 +1,23 @@
-import {
-  CoordinateHistoryFilters,
-  CoordinateHistoryH3Filters,
-  getCoordinateHistory,
-  getCoordinateHistoryH3,
-  CoordinateHistoryResponse,
-  CoordinateHistoryH3Response,
-} from '@/lib/api/coordinateHistoryApi';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useEffect, useMemo } from 'react';
 
+import {
+  CoordinateHistoryFilters,
+  CoordinateHistoryH3Filters,
+  CoordinateHistoryH3Response,
+  CoordinateHistoryResponse,
+  getCoordinateHistory,
+  getCoordinateHistoryH3,
+} from '@/lib/api/coordinateHistoryApi';
+
 export const useInfiniteCoordinateHistory = (
   baseFilters: CoordinateHistoryFilters,
-  windowBounds: any,
+  windowBounds: {
+    north: number;
+    south: number;
+    east: number;
+    west: number;
+  } | null,
   enabled: boolean = true
 ) => {
   const {
@@ -59,7 +65,12 @@ export const useInfiniteCoordinateHistory = (
 // Custom hook for auto-paginated H3 coordinate history
 export const useInfiniteCoordinateHistoryH3 = (
   baseFilters: CoordinateHistoryH3Filters,
-  windowBounds: any,
+  windowBounds: {
+    north: number;
+    south: number;
+    east: number;
+    west: number;
+  } | null,
   enabled: boolean = true
 ) => {
   const {

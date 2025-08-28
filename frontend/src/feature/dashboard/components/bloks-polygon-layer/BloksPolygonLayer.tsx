@@ -1,7 +1,8 @@
-import { BlokGeoJSON } from '@/feature/dashboard/types/blockGeoJson.type';
+import { DivIcon, LatLngBounds,LatLngTuple } from 'leaflet';
 import { FC, useEffect } from 'react';
-import { Polygon, Marker, useMap } from 'react-leaflet';
-import { LatLngTuple, DivIcon, LatLngBounds } from 'leaflet';
+import { Marker, Polygon, useMap } from 'react-leaflet';
+
+import { BlokGeoJSON } from '@/feature/dashboard/types/blockGeoJson.type';
 
 const convertGeoJSONToLeaflet = (coordinates: number[][]): LatLngTuple[] => {
   return coordinates.map((coord) => [coord[1], coord[0]] as LatLngTuple);

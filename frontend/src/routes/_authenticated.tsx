@@ -1,5 +1,6 @@
-import { createFileRoute, redirect, Outlet } from '@tanstack/react-router';
-import { Box, Spinner, Center } from '@chakra-ui/react';
+import { Box, Center,Spinner } from '@chakra-ui/react';
+import { createFileRoute, Outlet,redirect } from '@tanstack/react-router';
+
 import { useAuth } from '@/lib/auth';
 
 export const Route = createFileRoute('/_authenticated')({

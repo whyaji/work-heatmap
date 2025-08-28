@@ -1,3 +1,3 @@
-export { AuthProvider, useAuth } from './AuthProvider';
-export type { User, AuthState } from './AuthProvider';
-export { LoadingScreen } from './LoadingScreen';
+export type { AuthState, User } from './AuthProvider';
+export { AuthProvider } from './AuthProvider';
+export { AuthContext, useAuth } from './useAuth.hook';

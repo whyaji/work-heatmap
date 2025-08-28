@@ -1,6 +1,5 @@
-import { Outlet, createRootRouteWithContext } from '@tanstack/react-router';
-import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
-import { TanstackDevtools } from '@tanstack/react-devtools';
+import { createRootRouteWithContext, Outlet } from '@tanstack/react-router';
+
 import { AuthState } from '@/lib/auth';
 
 interface MyRouterContext {

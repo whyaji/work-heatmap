@@ -1,52 +1,28 @@
 import {
+  Badge,
   Box,
   Button,
-  VStack,
-  HStack,
-  useBreakpointValue,
-  Icon,
-  Tooltip,
-  useColorModeValue,
-  Badge,
   Collapse,
-  Text,
-  useDisclosure,
+  HStack,
+  Icon,
   Image,
   SimpleGrid,
   Slider,
-  SliderTrack,
   SliderFilledTrack,
   SliderThumb,
+  SliderTrack,
+  Text,
+  Tooltip,
+  useBreakpointValue,
+  useColorModeValue,
+  useDisclosure,
+  VStack,
 } from '@chakra-ui/react';
 import { ComponentProps, FC } from 'react';
-import { FiMap, FiLayers, FiGrid, FiChevronUp, FiEye } from 'react-icons/fi';
-import { heatmapConfig } from '../maps-heatmap/MapsHeatmaps';
+import { FiChevronUp, FiEye, FiGrid, FiLayers, FiMap } from 'react-icons/fi';
 
-export interface MapTileOption {
-  label: string;
-  value: string;
-  source: string;
-  thumbnail: string;
-  description: string;
-}
-
-export const listMapTileOptions: MapTileOption[] = [
-  {
-    label: 'Satellite View',
-    value:
-      'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    source: 'Esri World Imagery',
-    thumbnail: '/satellite-view.jpg',
-    description: 'High-resolution satellite imagery',
-  },
-  {
-    label: 'Street View',
-    value: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    source: 'OpenStreetMap',
-    thumbnail: '/street-view.jpg',
-    description: 'Detailed street-level view',
-  },
-];
+import heatmapDefaultConfig from '../../constants/heatmapConfig';
+import listMapTileOptions from '../../constants/listMapTileOptions';
 
 export const MapsHeatmapLayerControl: FC<{
   areaOpacity?: number;
@@ -73,8 +49,10 @@ export const MapsHeatmapLayerControl: FC<{
   setShowHeatmap,
   setShowClusteredMarkers,
   setShowMarker,
-  heatmapGradient = heatmapConfig.gradient,
+  heatmapGradient: heatmapGradientProp,
 }) => {
+  const heatmapGradient = heatmapGradientProp ?? heatmapDefaultConfig.gradient;
+
   const { isOpen, onToggle } = useDisclosure({ defaultIsOpen: true });
   const isMobile = useBreakpointValue({ base: true, md: false });
   const bgColor = useColorModeValue('white', 'gray.900');
@@ -284,7 +262,7 @@ export const MapsHeatmapLayerControl: FC<{
             <Box w="100%" h="1px" bg={borderColor} opacity={0.5} />
 
             {/* Area Opacity Slider*/}
-            {areaOpacity && setAreaOpacity && (
+            {areaOpacity !== undefined && setAreaOpacity !== undefined && (
               <>
                 <Box w="100%">
                   <HStack justify="space-between" mb={2}>

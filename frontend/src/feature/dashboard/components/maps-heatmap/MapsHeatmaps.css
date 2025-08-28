@@ -1,0 +1,56 @@
+/* Marker Cluster Styles */
+.marker-cluster {
+  background: rgba(0, 123, 255, 0.8);
+  border: 2px solid rgba(0, 123, 255, 0.9);
+  border-radius: 50%;
+  color: white;
+  height: 40px;
+  line-height: 37px;
+  text-align: center;
+  width: 40px;
+  font-weight: bold;
+  font-size: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+}
+
+.marker-cluster:hover {
+  background: rgba(0, 123, 255, 1);
+  transform: scale(1.1);
+}
+
+.marker-cluster-small {
+  background: rgba(40, 167, 69, 0.8);
+  border-color: rgba(40, 167, 69, 0.9);
+}
+
+.marker-cluster-small:hover {
+  background: rgba(40, 167, 69, 1);
+}
+
+.marker-cluster-medium {
+  background: rgba(255, 193, 7, 0.8);
+  border-color: rgba(255, 193, 7, 0.9);
+}
+
+.marker-cluster-medium:hover {
+  background: rgba(255, 193, 7, 1);
+}
+
+.marker-cluster-large {
+  background: rgba(255, 123, 7, 0.8);
+  border-color: rgba(255, 123, 7, 0.9);
+}
+
+.marker-cluster-large:hover {
+  background: rgba(255, 123, 7, 1);
+}
+
+.marker-cluster-extra-large {
+  background: rgba(220, 53, 69, 0.8);
+  border-color: rgba(220, 53, 69, 0.9);
+}
+
+.marker-cluster-extra-large:hover {
+  background: rgba(220, 53, 69, 1);
+}
