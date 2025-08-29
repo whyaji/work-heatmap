@@ -21,6 +21,9 @@ export interface UserResponse {
 }
 
 export const getUsers = async (): Promise<UserResponse> => {
-  const response = await userApi.$get();
+  const response = await userApi.available.$get();
+  if (!response.ok) {
+    return { data: [] };
+  }
   return response.json();
 };

@@ -1,5 +1,5 @@
 import { zValidator } from '@hono/zod-validator';
-import { and, count, desc, eq, gte, lte } from 'drizzle-orm';
+import { and, count, desc, eq, gte, inArray, lte } from 'drizzle-orm';
 import { cellArea, cellToLatLng, getResolution, latLngToCell } from 'h3-js';
 import { Hono } from 'hono';
 import { z } from 'zod';
@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { db } from '../db/database';
 import { coordinateHistorySchema, userSchema } from '../db/schema/schema';
 import authMiddleware from '../middleware/jwt';
+import { getUsersAvailable } from './userRoute';
 
 const querySchema = z.object({
   page: z.string().transform(Number).default(1),
@@ -28,8 +29,24 @@ export const coordinateHistoryRoute = new Hono()
 
     const offset = (page - 1) * limit;
 
+    const payload = c.get('jwtPayload');
+    const currentUserId = payload?.userId;
+
+    if (!currentUserId || isNaN(Number(currentUserId))) {
+      return c.json({ message: 'User not found' }, 404);
+    }
+
+    const users = await getUsersAvailable(Number(currentUserId));
+
     // Build where conditions
     const conditions = [];
+
+    conditions.push(
+      inArray(
+        coordinateHistorySchema.user_id,
+        users.map((user) => user.id)
+      )
+    );
 
     if (startDate) {
       conditions.push(gte(coordinateHistorySchema.timestamp, new Date(startDate)));
@@ -113,8 +130,24 @@ export const coordinateHistoryRoute = new Hono()
 
       const offset = (page - 1) * limit;
 
+      const payload = c.get('jwtPayload');
+      const currentUserId = payload?.userId;
+
+      if (!currentUserId || isNaN(Number(currentUserId))) {
+        return c.json({ message: 'User not found' }, 404);
+      }
+
+      const users = await getUsersAvailable(Number(currentUserId));
+
       // Build where conditions
       const conditions = [];
+
+      conditions.push(
+        inArray(
+          coordinateHistorySchema.user_id,
+          users.map((user) => user.id)
+        )
+      );
 
       if (startDate) {
         conditions.push(gte(coordinateHistorySchema.timestamp, new Date(startDate)));
