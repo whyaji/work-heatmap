@@ -27,11 +27,12 @@ export const ExportImageModal: FC<{
   onClose: () => void;
   captureBoxRef: RefObject<HTMLDivElement | null>;
 }> = ({ isOpen, onClose, captureBoxRef }) => {
-  const [isExporting, setIsExporting] = useState(false);
+  const [isExportingImage, setIsExportingImage] = useState(false);
+  const [isExportingPDF, setIsExportingPDF] = useState(false);
   const toast = useToast();
 
   const exportAsPNG = useCallback(async () => {
-    setIsExporting(true);
+    setIsExportingImage(true);
     try {
       if (!captureBoxRef.current) {
         throw new Error('Dashboard container not found');
@@ -64,12 +65,12 @@ export const ExportImageModal: FC<{
         isClosable: true,
       });
     } finally {
-      setIsExporting(false);
+      setIsExportingImage(false);
     }
   }, [toast, captureBoxRef]);
 
   const exportAsPDF = useCallback(async () => {
-    setIsExporting(true);
+    setIsExportingPDF(true);
     try {
       if (!captureBoxRef.current) {
         throw new Error('Dashboard container not found');
@@ -94,7 +95,7 @@ export const ExportImageModal: FC<{
       });
 
       pdf.addImage(dataUrl, 'PNG', 0, 0, img.width, img.height);
-      pdf.save(`dashboard-screenshot-${new Date().toISOString()}.pdf`);
+      pdf.save(`cwa-map-${moment().format('DD-MM-YYYY-HH-mm-ss')}.pdf`);
 
       toast({
         title: 'Berhasil',
@@ -112,7 +113,7 @@ export const ExportImageModal: FC<{
         isClosable: true,
       });
     } finally {
-      setIsExporting(false);
+      setIsExportingPDF(false);
     }
   }, [toast, captureBoxRef]);
 
@@ -154,8 +155,9 @@ export const ExportImageModal: FC<{
             <VStack spacing={3} width="full">
               <Button
                 onClick={exportAsPNG}
-                isLoading={isExporting}
-                loadingText="Exporting PNG..."
+                isLoading={isExportingImage}
+                isDisabled={isExportingPDF}
+                loadingText="Mengekspor PNG..."
                 width="full"
                 size="lg"
                 bgGradient="linear(to-r, blue.500, blue.600)"
@@ -177,8 +179,9 @@ export const ExportImageModal: FC<{
 
               <Button
                 onClick={exportAsPDF}
-                isLoading={isExporting}
-                loadingText="Exporting PDF..."
+                isLoading={isExportingPDF}
+                isDisabled={isExportingImage}
+                loadingText="Mengekspor PDF..."
                 width="full"
                 size="lg"
                 bgGradient="linear(to-r, red.500, red.600)"
