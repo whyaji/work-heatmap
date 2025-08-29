@@ -2,9 +2,9 @@ import './MapsHeatmaps.css';
 
 import { Box, Text } from '@chakra-ui/react';
 import { HeatmapLayerFactory } from '@vgrid/react-leaflet-heatmap-layer';
-import L from 'leaflet';
+import L, { LatLngBounds } from 'leaflet';
 import { FC, useMemo } from 'react';
-import { CircleMarker, Popup } from 'react-leaflet';
+import { CircleMarker, Popup, useMap } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-markercluster';
 
 import { CoordinateHistoryType, H3Type } from '@/types/coordinateHistory.type';
@@ -12,6 +12,32 @@ import { CoordinateHistoryType, H3Type } from '@/types/coordinateHistory.type';
 import heatmapDefaultConfig from '../../constants/heatmapConfig';
 
 const HeatmapLayer = HeatmapLayerFactory<[number, number, number]>();
+
+const calculateBounds = (allPointData: [number, number, number][]): LatLngBounds | null => {
+  if (!allPointData || allPointData.length === 0) {
+    return null;
+  }
+
+  let minLat = Infinity;
+  let maxLat = -Infinity;
+  let minLng = Infinity;
+  let maxLng = -Infinity;
+
+  allPointData.forEach((point) => {
+    const lat = point[0];
+    const lng = point[1];
+    minLat = Math.min(minLat, lat);
+    maxLat = Math.max(maxLat, lat);
+    minLng = Math.min(minLng, lng);
+    maxLng = Math.max(maxLng, lng);
+  });
+
+  if (minLat === Infinity || maxLat === -Infinity || minLng === Infinity || maxLng === -Infinity) {
+    return null;
+  }
+
+  return new LatLngBounds([minLat, minLng], [maxLat, maxLng]);
+};
 
 // Heatmap data processing component
 export const HeatmapCoordinateDataProcessor: FC<{
@@ -21,6 +47,7 @@ export const HeatmapCoordinateDataProcessor: FC<{
   showIndividualMarkers?: boolean;
   radius?: number;
   gradient?: Record<number, string>;
+  hasArea?: boolean;
 }> = ({
   data,
   showHeatmap = true,
@@ -28,7 +55,9 @@ export const HeatmapCoordinateDataProcessor: FC<{
   showIndividualMarkers = true,
   radius,
   gradient,
+  hasArea = false,
 }) => {
+  const map = useMap();
   const heatmapConfig = heatmapDefaultConfig;
   // Convert to heatmap format: [lat, lng, intensity]
   const heatmapPoints = useMemo(() => {
@@ -42,6 +71,17 @@ export const HeatmapCoordinateDataProcessor: FC<{
         allPoints.push([lat, lon, 1]);
       }
     });
+
+    // if not has area, change center and zoom based on the data
+    if (!hasArea) {
+      const bounds = calculateBounds(allPoints);
+      if (bounds) {
+        map.fitBounds(bounds, {
+          animate: true,
+          padding: [60, 60],
+        });
+      }
+    }
 
     return allPoints;
   }, [data]);
@@ -146,10 +186,24 @@ export const HeatmapH3DataProcessor: FC<{
   showH3Markers?: boolean;
   radius?: number;
   gradient?: Record<number, string>;
-}> = ({ data, showHeatmap = true, showH3Markers = true, radius, gradient }) => {
+  hasArea?: boolean;
+}> = ({ data, showHeatmap = true, showH3Markers = true, radius, gradient, hasArea = false }) => {
+  const map = useMap();
   const heatmapConfig = heatmapDefaultConfig;
   // Process H3 data for heatmap visualization
   const heatmapPoints = useMemo(() => {
+    // if not has area, change center and zoom based on the data
+    if (!hasArea) {
+      const bounds = calculateBounds(
+        data.map((h3Item) => [h3Item.center.lat, h3Item.center.lon, 0])
+      );
+      if (bounds) {
+        map.fitBounds(bounds, {
+          animate: true,
+          padding: [60, 60],
+        });
+      }
+    }
     return data.map((h3Item) => {
       // Convert H3 center coordinates to heatmap format: [lat, lng, intensity]
       // Intensity is based on the count of coordinates in this H3 cell

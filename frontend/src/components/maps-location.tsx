@@ -1,4 +1,4 @@
-import { Box, IconButton, Tooltip, useBreakpointValue,VStack } from '@chakra-ui/react';
+import { Box, IconButton, Tooltip, useBreakpointValue, VStack } from '@chakra-ui/react';
 import { useCallback, useEffect, useRef } from 'react';
 import { FiZoomIn, FiZoomOut } from 'react-icons/fi';
 import { useMap, useMapEvents } from 'react-leaflet';
@@ -27,7 +27,7 @@ export function ZoomControls({
   return (
     <Box
       position="absolute"
-      top={isMobile ? 40 : 20}
+      top={isMobile ? 36 : 20}
       right={4}
       zIndex={1000}
       bg="white"

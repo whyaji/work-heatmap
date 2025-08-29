@@ -1,4 +1,4 @@
-import { DivIcon, LatLngBounds,LatLngTuple } from 'leaflet';
+import { DivIcon, LatLngBounds, LatLngTuple } from 'leaflet';
 import { FC, useEffect } from 'react';
 import { Marker, Polygon, useMap } from 'react-leaflet';
 
@@ -54,7 +54,7 @@ const calculateBounds = (blokGeoJSON: BlokGeoJSON): LatLngBounds | null => {
 // Calculate center for grouped polygons by estate or afdeling
 const calculateGroupCenter = (
   blokGeoJSON: BlokGeoJSON,
-  groupBy: 'estate' | 'afdeling'
+  groupBy: 'estate' | 'afdeling' | 'estate-afdeling'
 ): Map<string, LatLngTuple> => {
   const groupCenters = new Map<string, LatLngTuple>();
   const groupCoordinates = new Map<string, LatLngTuple[]>();
@@ -63,7 +63,13 @@ const calculateGroupCenter = (
     const geoJsonCoords = feature.geometry.coordinates[0];
     if (isValidPolygon(geoJsonCoords)) {
       const leafletCoords = convertGeoJSONToLeaflet(geoJsonCoords);
-      const groupName = feature.properties[groupBy];
+      let groupName: string;
+
+      if (groupBy === 'estate-afdeling') {
+        groupName = `${feature.properties.estate} - ${feature.properties.afdeling}`;
+      } else {
+        groupName = feature.properties[groupBy];
+      }
 
       if (!groupCoordinates.has(groupName)) {
         groupCoordinates.set(groupName, []);
@@ -85,6 +91,12 @@ const calculateGroupCenter = (
   });
 
   return groupCenters;
+};
+
+// Check if there are multiple estates
+const hasMultipleEstates = (blokGeoJSON: BlokGeoJSON): boolean => {
+  const estates = new Set(blokGeoJSON.features.map((feature) => feature.properties.estate));
+  return estates.size > 1;
 };
 
 export const BloksPolygonLayer: FC<{ blokGeoJSON: BlokGeoJSON; opacity: number }> = ({
@@ -109,6 +121,8 @@ export const BloksPolygonLayer: FC<{ blokGeoJSON: BlokGeoJSON; opacity: number }
   // Calculate group centers for estate and afdeling
   const estateCenters = calculateGroupCenter(blokGeoJSON, 'estate');
   const afdelingCenters = calculateGroupCenter(blokGeoJSON, 'afdeling');
+  const estateAfdelingCenters = calculateGroupCenter(blokGeoJSON, 'estate-afdeling');
+  const multipleEstates = hasMultipleEstates(blokGeoJSON);
 
   return (
     <>
@@ -140,9 +154,17 @@ export const BloksPolygonLayer: FC<{ blokGeoJSON: BlokGeoJSON; opacity: number }
             fontSize = '12px';
             labelCenter = centerCoords; // Use individual polygon center for blocks
           } else if (zoom > 11) {
-            text = feature.properties.afdeling;
+            if (multipleEstates) {
+              text = `${feature.properties.estate} - ${feature.properties.afdeling}`;
+              labelCenter =
+                estateAfdelingCenters.get(
+                  `${feature.properties.estate} - ${feature.properties.afdeling}`
+                ) || null;
+            } else {
+              text = feature.properties.afdeling;
+              labelCenter = afdelingCenters.get(feature.properties.afdeling) || null;
+            }
             fontSize = '14px';
-            labelCenter = afdelingCenters.get(feature.properties.afdeling) || null;
           } else if (zoom > 9) {
             text = feature.properties.estate;
             fontSize = '16px';
@@ -175,7 +197,11 @@ export const BloksPolygonLayer: FC<{ blokGeoJSON: BlokGeoJSON; opacity: number }
           zoom > 13
             ? centerCoords
             : zoom > 11
-              ? afdelingCenters.get(feature.properties.afdeling) || centerCoords
+              ? multipleEstates
+                ? estateAfdelingCenters.get(
+                    `${feature.properties.estate} - ${feature.properties.afdeling}`
+                  ) || centerCoords
+                : afdelingCenters.get(feature.properties.afdeling) || centerCoords
               : estateCenters.get(feature.properties.estate) || centerCoords;
 
         return (
