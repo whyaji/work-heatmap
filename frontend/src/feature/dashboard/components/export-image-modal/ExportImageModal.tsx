@@ -121,6 +121,7 @@ export const ExportImageModal: FC<{
     <Modal isOpen={isOpen} onClose={onClose} isCentered size="md">
       <ModalOverlay bg="blackAlpha.600" />
       <ModalContent
+        margin={5}
         borderRadius="xl"
         overflow="hidden"
         boxShadow="2xl"

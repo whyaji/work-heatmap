@@ -21,6 +21,7 @@ import {
   Link,
   SimpleGrid,
   Text,
+  useBreakpointValue,
   useColorModeValue,
   useToast,
   VStack,
@@ -75,6 +76,7 @@ export const LoginScreen = () => {
   const [showPassword, setShowPassword] = useState(false);
   const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const justForm = useBreakpointValue({ base: true, lg: false });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const search: any = Route.useSearch();
   const toast = useToast();
@@ -125,6 +127,7 @@ export const LoginScreen = () => {
   const cardBg = useColorModeValue('white', 'gray.800');
   const bgColor = useColorModeValue('gray.50', 'gray.900');
 
+  // center the login form
   return (
     <Box minH="100vh" bg={bgColor} position="relative" overflow="hidden">
       {/* Background animated elements */}
@@ -153,131 +156,139 @@ export const LoginScreen = () => {
         animation={`${float} 10s ease-in-out infinite reverse`}
       />
 
-      <Container maxW="7xl" minH="100vh" py={8}>
+      <Container
+        maxW="7xl"
+        minH="100vh"
+        py={8}
+        display="flex"
+        justifyContent="center"
+        alignItems="center">
         <Flex minH="full" align="center" justify="center">
           <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={0} maxW="6xl" w="full">
             {/* Left Panel - Branding & Visual */}
-            <Box
-              bgGradient="linear(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)"
-              color="white"
-              p={{ base: 8, lg: 12 }}
-              borderLeftRadius={{ base: '2xl', lg: '2xl' }}
-              borderRightRadius={{ base: '2xl', lg: 'none' }}
-              borderBottomRadius={{ base: 'none', lg: '2xl' }}
-              position="relative"
-              overflow="hidden"
-              minH={{ base: '300px', lg: '600px' }}>
-              {/* Decorative elements */}
+            {!justForm && (
               <Box
-                position="absolute"
-                top="20%"
-                left="10%"
-                w="80px"
-                h="80px"
-                bg="whiteAlpha.200"
-                borderRadius="full"
-                animation={`${float} 6s ease-in-out infinite`}
-              />
-              <Box
-                position="absolute"
-                bottom="30%"
-                right="15%"
-                w="60px"
-                h="60px"
-                bg="whiteAlpha.150"
-                borderRadius="full"
-                animation={`${float} 8s ease-in-out infinite reverse`}
-              />
-
-              <VStack
-                spacing={8}
-                align="start"
-                h="full"
-                justify="center"
+                bgGradient="linear(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)"
+                color="white"
+                p={{ base: 8, lg: 12 }}
+                borderLeftRadius={{ base: '2xl', lg: '2xl' }}
+                borderRightRadius={{ base: '2xl', lg: 'none' }}
+                borderBottomRadius={{ base: 'none', lg: '2xl' }}
                 position="relative"
-                zIndex={1}>
-                <VStack spacing={4} align="start">
-                  <Badge
-                    colorScheme="whiteAlpha"
-                    px={3}
-                    py={1}
-                    borderRadius="full"
-                    animation={`${pulse} 2s infinite`}>
-                    <HStack spacing={2}>
-                      <Icon as={FiShield} boxSize={3} />
-                      <Text fontSize="sm">Secure Login</Text>
+                overflow="hidden"
+                minH={{ base: '300px', lg: '600px' }}>
+                {/* Decorative elements */}
+                <Box
+                  position="absolute"
+                  top="20%"
+                  left="10%"
+                  w="80px"
+                  h="80px"
+                  bg="whiteAlpha.200"
+                  borderRadius="full"
+                  animation={`${float} 6s ease-in-out infinite`}
+                />
+                <Box
+                  position="absolute"
+                  bottom="30%"
+                  right="15%"
+                  w="60px"
+                  h="60px"
+                  bg="whiteAlpha.150"
+                  borderRadius="full"
+                  animation={`${float} 8s ease-in-out infinite reverse`}
+                />
+
+                <VStack
+                  spacing={8}
+                  align="start"
+                  h="full"
+                  justify="center"
+                  position="relative"
+                  zIndex={1}>
+                  <VStack spacing={4} align="start">
+                    <Badge
+                      colorScheme="whiteAlpha"
+                      px={3}
+                      py={1}
+                      borderRadius="full"
+                      animation={`${pulse} 2s infinite`}>
+                      <HStack spacing={2}>
+                        <Icon as={FiShield} boxSize={3} />
+                        <Text fontSize="sm">Secure Login</Text>
+                      </HStack>
+                    </Badge>
+
+                    <Heading size="2xl" fontWeight="black" lineHeight="shorter">
+                      Selamat Datang di
+                      <Text
+                        as="span"
+                        display="block"
+                        bgGradient="linear(to-r, yellow.300, orange.300)"
+                        bgClip="text">
+                        CWA+ Dashboard
+                      </Text>
+                    </Heading>
+
+                    <Text fontSize="lg" opacity={0.9} maxW="md">
+                      Akses sistem Pelacakan Pekerja Kontrol Kualitas Anda. Pantau tim, analisis
+                      kinerja, dan optimalkan operasi secara real-time.
+                    </Text>
+                  </VStack>
+
+                  {/* Features showcase */}
+                  <VStack spacing={4} align="start" w="full">
+                    <HStack spacing={3} animation={`${slideIn} 0.5s ease-out`}>
+                      <Icon as={FiMap} boxSize={5} />
+                      <Text>Pelacakan Lokasi Real-time</Text>
                     </HStack>
-                  </Badge>
+                    <HStack spacing={3} animation={`${slideIn} 0.5s ease-out 0.1s both`}>
+                      <Icon as={FiActivity} boxSize={5} />
+                      <Text>Analisis Heatmap Lanjutan</Text>
+                    </HStack>
+                    <HStack spacing={3} animation={`${slideIn} 0.5s ease-out 0.2s both`}>
+                      <Icon as={FiUsers} boxSize={5} />
+                      <Text>Pemantauan Kinerja Tim</Text>
+                    </HStack>
+                  </VStack>
 
-                  <Heading size="2xl" fontWeight="black" lineHeight="shorter">
-                    Welcome to
-                    <Text
-                      as="span"
-                      display="block"
-                      bgGradient="linear(to-r, yellow.300, orange.300)"
-                      bgClip="text">
-                      CWA+ Dashboard
-                    </Text>
-                  </Heading>
-
-                  <Text fontSize="lg" opacity={0.9} maxW="md">
-                    Access your Quality Control Worker Tracking system. Monitor teams, analyze
-                    performance, and optimize operations in real-time.
-                  </Text>
+                  {/* Stats */}
+                  <SimpleGrid columns={3} spacing={6} w="full" pt={4}>
+                    <VStack spacing={1}>
+                      <Text fontSize="2xl" fontWeight="bold">
+                        2.5K+
+                      </Text>
+                      <Text fontSize="xs" opacity={0.8}>
+                        Pekerja Aktif
+                      </Text>
+                    </VStack>
+                    <VStack spacing={1}>
+                      <Text fontSize="2xl" fontWeight="bold">
+                        150+
+                      </Text>
+                      <Text fontSize="xs" opacity={0.8}>
+                        Area Tercover
+                      </Text>
+                    </VStack>
+                    <VStack spacing={1}>
+                      <Text fontSize="2xl" fontWeight="bold">
+                        99.9%
+                      </Text>
+                      <Text fontSize="xs" opacity={0.8}>
+                        Waktu Aktif
+                      </Text>
+                    </VStack>
+                  </SimpleGrid>
                 </VStack>
-
-                {/* Features showcase */}
-                <VStack spacing={4} align="start" w="full">
-                  <HStack spacing={3} animation={`${slideIn} 0.5s ease-out`}>
-                    <Icon as={FiMap} boxSize={5} />
-                    <Text>Real-time Location Tracking</Text>
-                  </HStack>
-                  <HStack spacing={3} animation={`${slideIn} 0.5s ease-out 0.1s both`}>
-                    <Icon as={FiActivity} boxSize={5} />
-                    <Text>Advanced Heatmap Analytics</Text>
-                  </HStack>
-                  <HStack spacing={3} animation={`${slideIn} 0.5s ease-out 0.2s both`}>
-                    <Icon as={FiUsers} boxSize={5} />
-                    <Text>Team Performance Monitoring</Text>
-                  </HStack>
-                </VStack>
-
-                {/* Stats */}
-                <SimpleGrid columns={3} spacing={6} w="full" pt={4}>
-                  <VStack spacing={1}>
-                    <Text fontSize="2xl" fontWeight="bold">
-                      2.5K+
-                    </Text>
-                    <Text fontSize="xs" opacity={0.8}>
-                      Active Workers
-                    </Text>
-                  </VStack>
-                  <VStack spacing={1}>
-                    <Text fontSize="2xl" fontWeight="bold">
-                      150+
-                    </Text>
-                    <Text fontSize="xs" opacity={0.8}>
-                      Areas Covered
-                    </Text>
-                  </VStack>
-                  <VStack spacing={1}>
-                    <Text fontSize="2xl" fontWeight="bold">
-                      99.9%
-                    </Text>
-                    <Text fontSize="xs" opacity={0.8}>
-                      Uptime
-                    </Text>
-                  </VStack>
-                </SimpleGrid>
-              </VStack>
-            </Box>
+              </Box>
+            )}
 
             {/* Right Panel - Login Form */}
             <Card
               bg={cardBg}
               borderRightRadius={{ base: '2xl', lg: '2xl' }}
               borderLeftRadius={{ base: '2xl', lg: 'none' }}
-              borderTopRadius={{ base: 'none', lg: '2xl' }}
+              borderTopRadius={justForm ? undefined : { base: 'none', lg: '2xl' }}
               shadow="2xl"
               border="1px solid"
               borderColor="gray.100"
@@ -286,10 +297,10 @@ export const LoginScreen = () => {
                 <VStack spacing={8} h="full" justify="center">
                   <VStack spacing={2} textAlign="center">
                     <Heading size="xl" color="gray.800" fontWeight="bold">
-                      Sign In
+                      Masuk
                     </Heading>
                     <Text color="gray.600" fontSize="lg">
-                      Enter your credentials to access your dashboard
+                      Masukkan kredensial Anda untuk mengakses dashboard
                     </Text>
                   </VStack>
 
@@ -304,8 +315,8 @@ export const LoginScreen = () => {
                             <Icon as={FiUser} color="gray.400" />
                           </InputLeftElement>
                           <Input
-                            {...register('username', { required: 'Username is required' })}
-                            placeholder="Enter your username"
+                            {...register('username', { required: 'Username diperlukan' })}
+                            placeholder="Masukkan username Anda"
                             bg="gray.50"
                             border="2px solid"
                             borderColor="gray.200"
@@ -323,16 +334,16 @@ export const LoginScreen = () => {
 
                       <FormControl isInvalid={!!errors.password}>
                         <FormLabel color="gray.700" fontWeight="semibold">
-                          Password
+                          Kata Sandi
                         </FormLabel>
                         <InputGroup size="lg">
                           <InputLeftElement>
                             <Icon as={FiLock} color="gray.400" />
                           </InputLeftElement>
                           <Input
-                            {...register('password', { required: 'Password is required' })}
+                            {...register('password', { required: 'Kata sandi diperlukan' })}
                             type={showPassword ? 'text' : 'password'}
-                            placeholder="Enter your password"
+                            placeholder="Masukkan kata sandi Anda"
                             bg="gray.50"
                             border="2px solid"
                             borderColor="gray.200"
@@ -351,7 +362,9 @@ export const LoginScreen = () => {
                           />
                           <InputRightElement>
                             <IconButton
-                              aria-label={showPassword ? 'Hide password' : 'Show password'}
+                              aria-label={
+                                showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'
+                              }
                               icon={<Icon as={showPassword ? FiEyeOff : FiEye} />}
                               variant="ghost"
                               size="sm"
@@ -377,12 +390,12 @@ export const LoginScreen = () => {
                         }}
                         _active={{ transform: 'translateY(0)' }}
                         isLoading={isSubmitting}
-                        loadingText="Signing in..."
+                        loadingText="Sedang masuk..."
                         fontWeight="bold"
                         borderRadius="xl"
                         transition="all 0.3s"
                         leftIcon={<Icon as={FiCheckCircle} />}>
-                        Sign In to Dashboard
+                        Masuk ke Dashboard
                       </Button>
                     </VStack>
                   </Box>
@@ -391,32 +404,28 @@ export const LoginScreen = () => {
                     <HStack spacing={4} opacity={0.7}>
                       <HStack spacing={1}>
                         <Icon as={FiShield} boxSize={4} />
-                        <Text fontSize="sm">Secure</Text>
+                        <Text fontSize="sm">Aman</Text>
                       </HStack>
                       <HStack spacing={1}>
                         <Icon as={FiZap} boxSize={4} />
-                        <Text fontSize="sm">Fast Access</Text>
+                        <Text fontSize="sm">Akses Cepat</Text>
                       </HStack>
                       <HStack spacing={1}>
                         <Icon as={FiTarget} boxSize={4} />
-                        <Text fontSize="sm">24/7 Available</Text>
+                        <Text fontSize="sm">Tersedia 24/7</Text>
                       </HStack>
                     </HStack>
 
                     <Divider />
 
                     <Text fontSize="sm" color="gray.500" textAlign="center">
-                      Don't have an account?{' '}
+                      Tidak punya akun?{' '}
                       <Link
                         color="purple.500"
                         fontWeight="semibold"
                         _hover={{ color: 'purple.600' }}>
-                        Contact your administrator
+                        Hubungi administrator Anda
                       </Link>
-                    </Text>
-
-                    <Text fontSize="xs" color="gray.400" textAlign="center">
-                      Demo credentials: username: "demo", password: "demo"
                     </Text>
                   </VStack>
                 </VStack>

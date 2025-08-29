@@ -8,6 +8,7 @@ import {
   HStack,
   Icon,
   IconButton,
+  Image,
   Stat,
   StatHelpText,
   StatLabel,
@@ -17,7 +18,7 @@ import {
 } from '@chakra-ui/react';
 import { keyframes } from '@emotion/react';
 import { FC, useEffect, useRef, useState } from 'react';
-import { FiActivity, FiChevronDown, FiMenu } from 'react-icons/fi';
+import { FiChevronDown, FiMenu } from 'react-icons/fi';
 import { IconType } from 'react-icons/lib';
 
 import { User } from '@/lib/api/userApi';
@@ -182,13 +183,13 @@ export const SideBarDashboard: FC<{
               />
             )}
             <Box bgGradient="linear(to-r, purple.500, blue.500)" color="white" borderRadius="lg">
-              <Icon as={FiActivity} boxSize={5} />
+              <Image src="/cwa-logo.jpeg" alt="CWA Logo" boxSize={10} borderRadius={10} />
             </Box>
             <VStack spacing={0} align="start">
               <Text fontSize={isMobile ? 'sm' : 'md'} color="gray.800" fontWeight="black">
                 CBI Work Area Plus
               </Text>
-              <Text fontSize={isMobile ? 'xs' : 'sm'} color="gray.500">
+              <Text fontSize={'xs'} color="gray.500">
                 Quality Control Worker Analytics
               </Text>
             </VStack>
