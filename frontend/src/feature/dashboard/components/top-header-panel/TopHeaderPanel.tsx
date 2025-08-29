@@ -1,6 +1,8 @@
 import { Box, Flex, HStack } from '@chakra-ui/react';
 import { FC } from 'react';
 
+import { ExportDataButton } from '../export-data-button/ExportDataButton';
+import { ExportImageButton } from '../export-image-button/ExportImageButton';
 import { FullScreenButton } from '../full-screen-button/FullScreenButton';
 import { RefreshButton } from '../refresh-button/RefreshButton';
 import { UserMenu } from '../user-menu/UserMenu';
@@ -13,6 +15,8 @@ export const TopHeaderPanel: FC<{
   borderColor: string;
   isFullScreen: boolean;
   handleFullScreen: () => void;
+  handleOpenExportImage: () => void;
+  handleOpenExportData: () => void;
 }> = ({
   isMobile,
   refreshingCoordData,
@@ -21,6 +25,8 @@ export const TopHeaderPanel: FC<{
   borderColor,
   isFullScreen,
   handleFullScreen,
+  handleOpenExportImage,
+  handleOpenExportData,
 }) => {
   return (
     <Box
@@ -35,6 +41,20 @@ export const TopHeaderPanel: FC<{
         <HStack spacing={3} pointerEvents="auto" />
         {/* Right side - Controls */}
         <HStack spacing={2} pointerEvents="auto">
+          {/* Export Image Button */}
+          <ExportImageButton
+            onClick={handleOpenExportImage}
+            controlsBg={controlsBg}
+            borderColor={borderColor}
+          />
+
+          {/* Export Data Button */}
+          <ExportDataButton
+            onClick={handleOpenExportData}
+            controlsBg={controlsBg}
+            borderColor={borderColor}
+          />
+
           {/* Refresh Button */}
           <RefreshButton
             refreshingCoordData={refreshingCoordData}

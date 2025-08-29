@@ -21,7 +21,14 @@ export const FilterDataFormView: FC<{
   filterDataFormState: ReturnType<typeof useFilterDataForm>;
   onApplyFilters: () => void;
   onClearFilters: () => void;
-}> = ({ userListData, filterDataFormState, onApplyFilters, onClearFilters }) => {
+  isExportImageOpen?: boolean;
+}> = ({
+  userListData,
+  filterDataFormState,
+  onApplyFilters,
+  onClearFilters,
+  isExportImageOpen = false,
+}) => {
   const { startDate, setStartDate, endDate, setEndDate, selectedUserId, setSelectedUserId } =
     filterDataFormState;
 
@@ -105,41 +112,45 @@ export const FilterDataFormView: FC<{
         </Select>
       </FormControl>
 
-      <HStack justify="center" pt={2}>
-        <Button
-          colorScheme="blue"
-          leftIcon={<FiFilter />}
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
+      {!isExportImageOpen && (
+        <>
+          <HStack justify="center" pt={2}>
+            <Button
+              colorScheme="blue"
+              leftIcon={<FiFilter />}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
 
-            onApplyFilters();
-          }}
-          size="md"
-          borderRadius="xl"
-          fontWeight="semibold"
-          w="full">
-          Terapkan
-        </Button>
-      </HStack>
+                onApplyFilters();
+              }}
+              size="md"
+              borderRadius="xl"
+              fontWeight="semibold"
+              w="full">
+              Terapkan
+            </Button>
+          </HStack>
 
-      <Button
-        variant="outline"
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
+          <Button
+            variant="outline"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
 
-          onClearFilters();
-        }}
-        size="md"
-        borderRadius="xl"
-        fontWeight="semibold"
-        borderColor="gray.300"
-        color="gray.700"
-        _hover={{ bg: 'gray.50', borderColor: 'gray.400' }}
-        w="full">
-        Clear
-      </Button>
+              onClearFilters();
+            }}
+            size="md"
+            borderRadius="xl"
+            fontWeight="semibold"
+            borderColor="gray.300"
+            color="gray.700"
+            _hover={{ bg: 'gray.50', borderColor: 'gray.400' }}
+            w="full">
+            Clear
+          </Button>
+        </>
+      )}
     </VStack>
   );
 };

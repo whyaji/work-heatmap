@@ -26,6 +26,8 @@ import { useLoading } from '@/lib/loading/useLoading.hook';
 import { CoordinateHistoryType } from '@/types/coordinateHistory.type';
 
 import { BloksPolygonLayer } from '../components/bloks-polygon-layer/BloksPolygonLayer';
+import { ExportDataModal } from '../components/export-data-modal/ExportDataModal';
+import { ExportImageModal } from '../components/export-image-modal/ExportImageModal';
 import { HeatmapCoordinateDataProcessor } from '../components/maps-heatmap/MapsHeatmaps';
 import { MapsHeatmapLayerControl } from '../components/maps-heatmap-layer-control/MapsHeatmapLayerControl';
 import { ScreenErrorDashboard } from '../components/screen-error-dashboard/ScreenErrorDashboard';
@@ -344,10 +346,8 @@ export const DashboardScreen = () => {
     let totalCoordinates = 0;
     let uniqueUsers = 0;
     let isLoading = false;
-    let dataSource = '';
 
     isLoading = isLoadingCoordinateHistory;
-    dataSource = 'Coordinates';
 
     if (allCoordinateData.length > 0) {
       totalCoordinates = allCoordinateData.length;
@@ -357,114 +357,153 @@ export const DashboardScreen = () => {
     return {
       stats: [
         {
-          label: 'Total Coordinates',
+          label: 'Total Kordinat',
           number: totalCoordinates.toString(),
-          helpText: `${dataSource.toLowerCase()} tracking points`,
+          helpText: `Titik koordinat`,
           icon: FiMapPin,
           color: 'blue',
           gradient: 'linear(to-r, blue.400, blue.600)',
         },
         {
-          label: 'Active Users',
+          label: 'Pengguna Aktif',
           number: uniqueUsers.toString(),
-          helpText: 'unique workers',
+          helpText: 'pengguna',
           icon: FiUsers,
           color: 'green',
           gradient: 'linear(to-r, green.400, green.600)',
         },
       ],
       isLoading,
-      dataSource,
       totalCoordinates,
       uniqueUsers,
     };
   }, [isUsingH3, allCoordinateData, isLoadingCoordinateHistory]);
+
+  // State modal export image
+  const {
+    isOpen: isExportImageOpen,
+    onOpen: onExportImageOpen,
+    onClose: onExportImageClose,
+  } = useDisclosure();
+
+  const captureBoxRef = useRef<HTMLDivElement>(null); // Create a ref for the main Box
+
+  const {
+    isOpen: isExportDataOpen,
+    onOpen: onExportDataOpen,
+    onClose: onExportDataClose,
+  } = useDisclosure();
 
   if (isErrorCoordinateHistory || isErrorUsers) {
     return <ScreenErrorDashboard bgColor={bgColor} />;
   }
 
   return (
-    <Box h="100vh" w="full" bg={bgColor} position="relative" overflow="hidden">
-      {isMobile !== undefined && (
-        <>
-          {/* Left Sidebar */}
-          <SideBarDashboard
-            isSidebarOpen={isSidebarOpen}
-            toggleSidebar={toggleSidebar}
-            isMobile={isMobile}
-            stats={stats.stats}
-            isLoadingAreaData={isLoadingAreaData}
-            dataRegional={dataRegional}
-            dataWilayah={dataWilayah}
-            dataEstate={dataEstate}
-            dataAfdeling={dataAfdeling}
-            filterAreaFormState={filterAreaFormState}
-            userListData={userListData}
-            filterDataFormState={filterDataFormState}
-            onApplyFilters={onApplyFilters}
-            onClearFilters={onClearFilters}
-            tempRadius={tempRadius}
-            setTempRadius={setTempRadius}
-          />
+    <>
+      <Box
+        ref={captureBoxRef}
+        h="100vh"
+        w="full"
+        bg={bgColor}
+        position="relative"
+        overflow="hidden">
+        {isMobile !== undefined && (
+          <>
+            {/* Left Sidebar */}
+            <SideBarDashboard
+              isSidebarOpen={isSidebarOpen}
+              toggleSidebar={toggleSidebar}
+              isMobile={isMobile}
+              stats={stats.stats}
+              isLoadingAreaData={isLoadingAreaData}
+              dataRegional={dataRegional}
+              dataWilayah={dataWilayah}
+              dataEstate={dataEstate}
+              dataAfdeling={dataAfdeling}
+              filterAreaFormState={filterAreaFormState}
+              userListData={userListData}
+              filterDataFormState={filterDataFormState}
+              onApplyFilters={onApplyFilters}
+              onClearFilters={onClearFilters}
+              tempRadius={tempRadius}
+              setTempRadius={setTempRadius}
+              isExportImageOpen={isExportImageOpen}
+            />
 
-          {/* Top Header Panel */}
-          <TopHeaderPanel
-            isMobile={isMobile}
-            refreshingCoordData={refreshingCoordData}
-            handleRefresh={handleRefresh}
-            controlsBg={controlsBg}
-            borderColor={borderColor}
-            isFullScreen={isFullScreen}
-            handleFullScreen={handleFullScreen}
-          />
-        </>
-      )}
+            {!isExportImageOpen && (
+              <TopHeaderPanel
+                isMobile={isMobile}
+                refreshingCoordData={refreshingCoordData}
+                handleRefresh={handleRefresh}
+                controlsBg={controlsBg}
+                borderColor={borderColor}
+                isFullScreen={isFullScreen}
+                handleFullScreen={handleFullScreen}
+                handleOpenExportImage={onExportImageOpen}
+                handleOpenExportData={onExportDataOpen}
+              />
+            )}
+          </>
+        )}
 
-      {/* Map Controls */}
-      <MapsHeatmapLayerControl
-        areaOpacity={selectedGeoJsonBlok ? blokOpacity : undefined}
-        setAreaOpacity={selectedGeoJsonBlok ? setBlokOpacity : undefined}
-        selectedMapTileIndex={selectedMapTileIndex}
-        setSelectedMapTileIndex={setSelectedMapTileIndex}
-        isUsingH3={isUsingH3}
-        showHeatmap={showHeatmap}
-        showClusteredMarkers={showClusteredMarkers}
-        showMarker={showMarker}
-        setShowHeatmap={setShowHeatmap}
-        setShowClusteredMarkers={setShowClusteredMarkers}
-        setShowMarker={setShowMarker}
-      />
+        {/* Map Controls */}
+        <MapsHeatmapLayerControl
+          areaOpacity={selectedGeoJsonBlok ? blokOpacity : undefined}
+          setAreaOpacity={selectedGeoJsonBlok ? setBlokOpacity : undefined}
+          selectedMapTileIndex={selectedMapTileIndex}
+          setSelectedMapTileIndex={setSelectedMapTileIndex}
+          isUsingH3={isUsingH3}
+          showHeatmap={showHeatmap}
+          showClusteredMarkers={showClusteredMarkers}
+          showMarker={showMarker}
+          setShowHeatmap={setShowHeatmap}
+          setShowClusteredMarkers={setShowClusteredMarkers}
+          setShowMarker={setShowMarker}
+        />
 
-      {/* Map Container */}
-      <Box p={0} h="full">
-        <MapContainer
-          center={mapCenter}
-          zoom={mapZoom}
-          style={{
-            width: '100%',
-            height: '100%',
-            zIndex: 10,
-          }}
-          minZoom={2}
-          zoomControl={false}
-          attributionControl={false}>
-          <TileLayer url={selectedMapTile.value} attribution={selectedMapTile.source} />
-          {selectedGeoJsonBlok && (
-            <BloksPolygonLayer blokGeoJSON={selectedGeoJsonBlok} opacity={blokOpacity} />
-          )}
-          <ZoomControls onZoomIn={handleZoomIn} onZoomOut={handleZoomOut} />
-          <ZoomListener onZoomChange={setMapZoom} />
-          <HeatmapCoordinateDataProcessor
-            data={coordinateHistoryData}
-            showHeatmap={showHeatmap}
-            showClusteredMarkers={showClusteredMarkers}
-            showIndividualMarkers={showMarker}
-            radius={radius}
-            hasArea={selectedGeoJsonBlok !== null}
-          />
-        </MapContainer>
+        {/* Map Container */}
+        <Box p={0} h="full">
+          <MapContainer
+            center={mapCenter}
+            zoom={mapZoom}
+            style={{
+              width: '100%',
+              height: '100%',
+              zIndex: 10,
+            }}
+            minZoom={2}
+            zoomControl={false}
+            attributionControl={false}>
+            <TileLayer url={selectedMapTile.value} attribution={selectedMapTile.source} />
+            {selectedGeoJsonBlok && (
+              <BloksPolygonLayer blokGeoJSON={selectedGeoJsonBlok} opacity={blokOpacity} />
+            )}
+            <ZoomListener onZoomChange={setMapZoom} />
+            {isMobile !== undefined && !isExportImageOpen && (
+              <ZoomControls onZoomIn={handleZoomIn} onZoomOut={handleZoomOut} isMobile={isMobile} />
+            )}
+            <HeatmapCoordinateDataProcessor
+              data={coordinateHistoryData}
+              showHeatmap={showHeatmap}
+              showClusteredMarkers={showClusteredMarkers}
+              showIndividualMarkers={showMarker}
+              radius={radius}
+              hasArea={selectedGeoJsonBlok !== null}
+            />
+          </MapContainer>
+        </Box>
       </Box>
-    </Box>
+      <ExportImageModal
+        isOpen={isExportImageOpen}
+        onClose={onExportImageClose}
+        captureBoxRef={captureBoxRef}
+      />
+      <ExportDataModal
+        isOpen={isExportDataOpen}
+        onClose={onExportDataClose}
+        coordinateHistoryData={coordinateHistoryData}
+        filters={filters}
+      />
+    </>
   );
 };

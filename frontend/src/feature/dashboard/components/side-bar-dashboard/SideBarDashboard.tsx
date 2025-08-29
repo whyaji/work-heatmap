@@ -63,6 +63,7 @@ export const SideBarDashboard: FC<{
   onClearFilters: () => void;
   tempRadius: number;
   setTempRadius: (radius: number) => void;
+  isExportImageOpen?: boolean;
 }> = ({
   isSidebarOpen,
   toggleSidebar,
@@ -83,6 +84,7 @@ export const SideBarDashboard: FC<{
   onClearFilters,
   tempRadius,
   setTempRadius,
+  isExportImageOpen = false,
 }) => {
   const [sidebarWidth, setSidebarWidth] = useState(340);
   const [isResizing, setIsResizing] = useState(false);
@@ -162,21 +164,23 @@ export const SideBarDashboard: FC<{
           borderBottomColor="gray.200"
           bg={bgColor}>
           <HStack spacing={3} w="full">
-            <IconButton
-              aria-label="Toggle sidebar"
-              icon={isSidebarOpen ? <FiChevronDown /> : <FiMenu />}
-              variant="ghost"
-              size="md"
-              onClick={toggleSidebar}
-              bg={controlsBg}
-              backdropFilter="blur(10px)"
-              border="1px solid"
-              borderColor={borderColor}
-              borderRadius="lg"
-              shadow="lg"
-              _hover={{ bg: 'rgba(255, 255, 255, 0.98)' }}
-              transition="all 0.3s ease"
-            />
+            {!isExportImageOpen && (
+              <IconButton
+                aria-label="Toggle sidebar"
+                icon={isSidebarOpen ? <FiChevronDown /> : <FiMenu />}
+                variant="ghost"
+                size="md"
+                onClick={toggleSidebar}
+                bg={controlsBg}
+                backdropFilter="blur(10px)"
+                border="1px solid"
+                borderColor={borderColor}
+                borderRadius="lg"
+                shadow="lg"
+                _hover={{ bg: 'rgba(255, 255, 255, 0.98)' }}
+                transition="all 0.3s ease"
+              />
+            )}
             <Box bgGradient="linear(to-r, purple.500, blue.500)" color="white" borderRadius="lg">
               <Icon as={FiActivity} boxSize={5} />
             </Box>
@@ -286,17 +290,22 @@ export const SideBarDashboard: FC<{
                 filterDataFormState={filterDataFormState}
                 onApplyFilters={onApplyFilters}
                 onClearFilters={onClearFilters}
+                isExportImageOpen={isExportImageOpen}
               />
 
-              <Divider />
-              <CustomizeFormView tempRadius={tempRadius} setTempRadius={setTempRadius} />
+              {!isExportImageOpen && (
+                <>
+                  <Divider />
+                  <CustomizeFormView tempRadius={tempRadius} setTempRadius={setTempRadius} />
+                </>
+              )}
             </VStack>
           </Box>
         </Collapse>
       </Box>
 
       {/* Resize Handle */}
-      {!isMobile && (
+      {!isMobile && !isExportImageOpen && (
         <SideBarResizeHandle
           resizeHandleRef={resizeHandleRef}
           isResizing={isResizing}

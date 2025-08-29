@@ -1,4 +1,4 @@
-import { Box, IconButton, Tooltip, useBreakpointValue, VStack } from '@chakra-ui/react';
+import { Box, IconButton, Tooltip, VStack } from '@chakra-ui/react';
 import { useCallback, useEffect, useRef } from 'react';
 import { FiZoomIn, FiZoomOut } from 'react-icons/fi';
 import { useMap, useMapEvents } from 'react-leaflet';
@@ -7,12 +7,13 @@ import { useMap, useMapEvents } from 'react-leaflet';
 export function ZoomControls({
   onZoomIn,
   onZoomOut,
+  isMobile,
 }: {
   onZoomIn: () => void;
   onZoomOut: () => void;
+  isMobile: boolean;
 }) {
   const map = useMap();
-  const isMobile = useBreakpointValue({ base: true, md: false });
 
   const handleZoomIn = () => {
     map.zoomIn();
