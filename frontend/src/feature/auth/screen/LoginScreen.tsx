@@ -29,6 +29,7 @@ import {
 import { keyframes } from '@emotion/react';
 import { useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
+import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 import { useForm } from 'react-hook-form';
 import {
   FiActivity,
@@ -72,7 +73,10 @@ interface LoginFormData {
   password: string;
 }
 
+const envType = import.meta.env.VITE_ENV;
+
 export const LoginScreen = () => {
+  const { executeRecaptcha } = useGoogleReCaptcha();
   const [showPassword, setShowPassword] = useState(false);
   const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
@@ -98,7 +102,23 @@ export const LoginScreen = () => {
 
   const onSubmit = async (data: LoginFormData) => {
     try {
-      await login(data.username, data.password);
+      if (!executeRecaptcha && envType !== 'development') {
+        toast({
+          title: 'Recaptcha tidak siap',
+          description: 'Silakan coba lagi nanti',
+          status: 'error',
+          duration: 3000,
+          isClosable: true,
+        });
+        return;
+      }
+
+      const recaptchaToken =
+        executeRecaptcha !== undefined && envType !== 'development'
+          ? await executeRecaptcha('login')
+          : 'without-recaptcha';
+
+      await login(data.username, data.password, recaptchaToken);
 
       toast({
         title: 'Login Successful',

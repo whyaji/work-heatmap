@@ -23,7 +23,7 @@ export interface AuthState {
 }
 
 export interface AuthContextType extends AuthState {
-  login: (username: string, password: string) => Promise<void>;
+  login: (username: string, password: string, recaptchaToken: string) => Promise<void>;
   logout: () => void;
   setUser: (user: User) => void;
 }
@@ -69,13 +69,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ router }) => {
     hideLoading();
   }, [showLoading, hideLoading]);
 
-  const login = async (username: string, password: string) => {
+  const login = async (username: string, password: string, recaptchaToken: string) => {
     try {
       showLoading();
 
       // Import login function dynamically to avoid circular dependency
       const { login: loginApi } = await import('@/lib/api/authApi');
-      const response = await loginApi(username, password);
+      const response = await loginApi(username, password, recaptchaToken);
 
       // Check if login was successful and extract data
       if ('success' in response && response.success && 'data' in response && response.data) {

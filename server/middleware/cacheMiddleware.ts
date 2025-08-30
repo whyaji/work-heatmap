@@ -152,14 +152,3 @@ export const cacheHealthCheck = async (): Promise<boolean> => {
     return false;
   }
 };
-
-// Graceful shutdown
-process.on('SIGINT', async () => {
-  console.log('Closing Redis connection...');
-  await redis.quit();
-});
-
-process.on('SIGTERM', async () => {
-  console.log('Closing Redis connection...');
-  await redis.quit();
-});
