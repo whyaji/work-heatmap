@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as AppPrivacyPolicyRouteImport } from './routes/app-privacy-policy'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
@@ -17,6 +18,11 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppPrivacyPolicyRoute = AppPrivacyPolicyRouteImport.update({
+  id: '/app-privacy-policy',
+  path: '/app-privacy-policy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
@@ -36,11 +42,13 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/app-privacy-policy': typeof AppPrivacyPolicyRoute
   '/login': typeof LoginRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/app-privacy-policy': typeof AppPrivacyPolicyRoute
   '/login': typeof LoginRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
 }
@@ -48,18 +56,20 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/app-privacy-policy': typeof AppPrivacyPolicyRoute
   '/login': typeof LoginRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/dashboard'
+  fullPaths: '/' | '/app-privacy-policy' | '/login' | '/dashboard'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/dashboard'
+  to: '/' | '/app-privacy-policy' | '/login' | '/dashboard'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/app-privacy-policy'
     | '/login'
     | '/_authenticated/dashboard'
   fileRoutesById: FileRoutesById
@@ -67,6 +77,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  AppPrivacyPolicyRoute: typeof AppPrivacyPolicyRoute
   LoginRoute: typeof LoginRoute
 }
 
@@ -77,6 +88,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/app-privacy-policy': {
+      id: '/app-privacy-policy'
+      path: '/app-privacy-policy'
+      fullPath: '/app-privacy-policy'
+      preLoaderRoute: typeof AppPrivacyPolicyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -118,6 +136,7 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  AppPrivacyPolicyRoute: AppPrivacyPolicyRoute,
   LoginRoute: LoginRoute,
 }
 export const routeTree = rootRouteImport
