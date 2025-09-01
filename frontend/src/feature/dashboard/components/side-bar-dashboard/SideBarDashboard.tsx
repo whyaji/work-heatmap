@@ -13,7 +13,10 @@ import {
   Icon,
   IconButton,
   Image,
-  Progress,
+  Slider,
+  SliderFilledTrack,
+  SliderThumb,
+  SliderTrack,
   Stat,
   StatHelpText,
   StatLabel,
@@ -97,6 +100,7 @@ export const SideBarDashboard: FC<{
   const isTrackingTimeline = useTrackingIndexStore((state) => state.isTrackingTimeline);
   const setIsTrackingTimeline = useTrackingIndexStore((state) => state.setIsTrackingTimeline);
   const trackingIndex = useTrackingIndexStore((state) => state.trackingIndex);
+  const setTrackingIndex = useTrackingIndexStore((state) => state.setTrackingIndex);
   const onNextIndex = useTrackingIndexStore((state) => state.onNextIndex);
   const onPrevIndex = useTrackingIndexStore((state) => state.onPrevIndex);
   const lengthTrackingIndex = useTrackingIndexStore((state) => state.length);
@@ -304,17 +308,24 @@ export const SideBarDashboard: FC<{
                             {trackingIndex + 1} / {lengthTrackingIndex}
                           </Text>
                         </HStack>
-                        <Progress
-                          value={
-                            lengthTrackingIndex > 0
-                              ? ((trackingIndex + 1) / lengthTrackingIndex) * 100
-                              : 0
-                          }
+                        <Slider
+                          value={trackingIndex + 1}
+                          onChange={(value) => setTrackingIndex(value - 1)}
+                          min={1}
+                          max={lengthTrackingIndex}
+                          step={1}
                           size="sm"
-                          colorScheme="blue"
-                          borderRadius="full"
-                          bg="gray.100"
-                        />
+                          colorScheme="blue">
+                          <SliderTrack bg={borderColor} h={2} borderRadius="full">
+                            <SliderFilledTrack bg="blue.500" />
+                          </SliderTrack>
+                          <SliderThumb
+                            boxSize={4}
+                            bg="blue.500"
+                            _hover={{ bg: 'blue.600' }}
+                            _active={{ bg: 'blue.700' }}
+                          />
+                        </Slider>
                       </Box>
 
                       {/* Navigation Controls */}

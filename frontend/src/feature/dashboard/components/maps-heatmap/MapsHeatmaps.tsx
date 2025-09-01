@@ -4,8 +4,8 @@ import { Badge, Box, Button, HStack, Text } from '@chakra-ui/react';
 import { HeatmapLayerFactory } from '@vgrid/react-leaflet-heatmap-layer';
 import L, { LatLngBounds } from 'leaflet';
 import moment from 'moment';
-import { FC, useEffect, useMemo } from 'react';
-import { CircleMarker, Polyline, Popup, useMap } from 'react-leaflet';
+import { FC, useEffect, useMemo, useRef } from 'react';
+import { CircleMarker, Marker, Polyline, Popup, useMap } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-markercluster';
 
 import { CoordinateHistoryType, H3Type } from '@/types/coordinateHistory.type';
@@ -14,6 +14,13 @@ import heatmapDefaultConfig from '../../constants/heatmapConfig';
 import { useTrackingIndexStore } from '../../lib/store/trackingIndexStore';
 
 const HeatmapLayer = HeatmapLayerFactory<[number, number, number]>();
+
+const pulsingIcon = L.divIcon({
+  className: 'pulsing-div-icon',
+  html: '<div class="pulsing-dot"></div>',
+  iconSize: [24, 24],
+  iconAnchor: [12, 12],
+});
 
 const calculateBounds = (allPointData: [number, number, number][]): LatLngBounds | null => {
   if (!allPointData || allPointData.length === 0) {
@@ -113,6 +120,53 @@ const DetailedPopupContent: FC<{
         {selectedIndex + 1} of {dataLength} points
       </Text>
     </>
+  );
+};
+
+const SelectedMarker: FC<{
+  position: [number, number];
+  selectedData: CoordinateHistoryType;
+  selectedIndex: number;
+  dataLength: number;
+  autoOpen: boolean;
+}> = ({ position, selectedData, selectedIndex, dataLength, autoOpen = false }) => {
+  const markerRef = useRef<L.Marker | null>(null);
+
+  useEffect(() => {
+    const open = setTimeout(() => {
+      if (autoOpen && markerRef.current) {
+        markerRef.current.openPopup();
+        console.log('open popup');
+      }
+    }, 500);
+    return () => clearTimeout(open);
+  }, []);
+
+  const isFirst = selectedIndex === 0;
+  const isLast = selectedIndex === dataLength - 1;
+
+  return (
+    <Marker ref={markerRef} position={position} icon={pulsingIcon}>
+      <Popup>
+        <Box minW="200px">
+          <HStack spacing={2} w="100%">
+            <Text fontWeight="bold" color="orange.600" fontSize="sm">
+              📍 Titik Terpilih
+            </Text>
+            {(isFirst || isLast) && (
+              <Badge colorScheme={isFirst ? 'green' : 'red'} size="sm" variant="solid">
+                {isFirst ? 'Point Awal' : 'Point Akhir'}
+              </Badge>
+            )}
+          </HStack>
+          <DetailedPopupContent
+            selectedData={selectedData}
+            selectedIndex={selectedIndex}
+            dataLength={dataLength}
+          />
+        </Box>
+      </Popup>
+    </Marker>
   );
 };
 
@@ -307,7 +361,6 @@ export const HeatmapTrackingTimeLine: FC<{
             return null; // Skip invalid coordinates
           }
 
-          const isSelected = index === selectedIndex;
           const isFirst = index === 0;
           const isLast = index === data.length - 1;
 
@@ -350,11 +403,6 @@ export const HeatmapTrackingTimeLine: FC<{
                     <Text fontWeight="bold" fontSize="sm" color="gray.700">
                       {isFirst ? 'Start Point' : isLast ? 'End Point' : `Point ${index + 1}`}
                     </Text>
-                    {isSelected && (
-                      <Badge colorScheme="orange" size="sm" variant="solid">
-                        Current
-                      </Badge>
-                    )}
                   </HStack>
 
                   <DetailedPopupContent
@@ -410,7 +458,7 @@ export const HeatmapTrackingTimeLine: FC<{
         <Popup>
           <Box minW="200px">
             <Text fontWeight="bold" color="green.600" fontSize="sm">
-              Start Point
+              Titik Awal
             </Text>
             <DetailedPopupContent
               selectedData={firstData}
@@ -431,7 +479,7 @@ export const HeatmapTrackingTimeLine: FC<{
         <Popup>
           <Box minW="200px">
             <Text fontWeight="bold" color="red.600" fontSize="sm">
-              End Point
+              Titik Akhir
             </Text>
             <DetailedPopupContent
               selectedData={lastData}
@@ -443,25 +491,13 @@ export const HeatmapTrackingTimeLine: FC<{
       </CircleMarker>
 
       {/* Selected data marker with pulsing effect */}
-      <CircleMarker
-        radius={12}
-        fillColor="rgba(245, 158, 11, 0.8)"
-        color="rgba(245, 158, 11, 1)"
-        weight={4}
-        center={[Number(selectedData.lat), Number(selectedData.lon)]}>
-        <Popup>
-          <Box minW="200px">
-            <Text fontWeight="bold" color="orange.600" fontSize="sm">
-              📍 Current Position
-            </Text>
-            <DetailedPopupContent
-              selectedData={selectedData}
-              selectedIndex={selectedIndex}
-              dataLength={data.length}
-            />
-          </Box>
-        </Popup>
-      </CircleMarker>
+      <SelectedMarker
+        position={[Number(selectedData.lat), Number(selectedData.lon)]}
+        selectedData={selectedData}
+        selectedIndex={selectedIndex}
+        dataLength={data.length}
+        autoOpen={true}
+      />
     </>
   );
 };
