@@ -1,15 +1,17 @@
 import './MapsHeatmaps.css';
 
-import { Box, Text } from '@chakra-ui/react';
+import { Badge, Box, Button, HStack, Text } from '@chakra-ui/react';
 import { HeatmapLayerFactory } from '@vgrid/react-leaflet-heatmap-layer';
 import L, { LatLngBounds } from 'leaflet';
-import { FC, useMemo } from 'react';
-import { CircleMarker, Popup, useMap } from 'react-leaflet';
+import moment from 'moment';
+import { FC, useEffect, useMemo } from 'react';
+import { CircleMarker, Polyline, Popup, useMap } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-markercluster';
 
 import { CoordinateHistoryType, H3Type } from '@/types/coordinateHistory.type';
 
 import heatmapDefaultConfig from '../../constants/heatmapConfig';
+import { useTrackingIndexStore } from '../../lib/store/trackingIndexStore';
 
 const HeatmapLayer = HeatmapLayerFactory<[number, number, number]>();
 
@@ -39,6 +41,81 @@ const calculateBounds = (allPointData: [number, number, number][]): LatLngBounds
   return new LatLngBounds([minLat, minLng], [maxLat, maxLng]);
 };
 
+const calculateHeatmapPoints = (
+  data: CoordinateHistoryType[],
+  map: L.Map,
+  hasArea: boolean
+): [number, number, number][] => {
+  // Create more granular heatmap points from individual coordinates
+  const allPoints: Array<[number, number, number]> = [];
+
+  data.forEach((coord) => {
+    if (coord.lat && coord.lon) {
+      const lat = parseFloat(coord.lat);
+      const lon = parseFloat(coord.lon);
+      allPoints.push([lat, lon, 1]);
+    }
+  });
+
+  // if not has area, change center and zoom based on the data
+  if (!hasArea) {
+    const bounds = calculateBounds(allPoints);
+    if (bounds) {
+      map.fitBounds(bounds, {
+        animate: true,
+        padding: [60, 60],
+      });
+    }
+  }
+
+  return allPoints;
+};
+
+// Helper function to get time ago
+const getTimeAgo = (date: Date): string => {
+  const now = new Date();
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+  if (diffInSeconds < 60) return `${diffInSeconds} detik yang lalu`;
+  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} menit yang lalu`;
+  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} jam yang lalu`;
+  return `${Math.floor(diffInSeconds / 86400)} hari yang lalu`;
+};
+
+const DetailedPopupContent: FC<{
+  selectedData: CoordinateHistoryType;
+  selectedIndex: number;
+  dataLength: number;
+}> = ({ selectedData, selectedIndex, dataLength }) => {
+  return (
+    <>
+      <Text fontSize="sm" fontFamily="mono" color="gray.700">
+        {Number(selectedData.lat).toFixed(6)}, {Number(selectedData.lon).toFixed(6)}
+      </Text>
+      <Text fontSize="sm" color="gray.700">
+        {selectedData.user?.nama ?? selectedData.user_id}
+      </Text>
+      <Text fontSize="sm" color="gray.700">
+        {moment(selectedData.timestamp).format('D MMM YY, HH:mm')}
+      </Text>
+      <Text fontSize="xs" color="gray.500">
+        {getTimeAgo(new Date(selectedData.timestamp))}
+      </Text>
+      <Box w="100%" bg="gray.200" borderRadius="full" h="2">
+        <Box
+          w={`${((selectedIndex + 1) / dataLength) * 100}%`}
+          bg="blue.500"
+          h="100%"
+          borderRadius="full"
+        />
+      </Box>
+      <Text fontSize="xs" color="gray.500" mt={1}>
+        {selectedIndex + 1} of {dataLength} points
+      </Text>
+    </>
+  );
+};
+
 // Heatmap data processing component
 export const HeatmapCoordinateDataProcessor: FC<{
   data: CoordinateHistoryType[];
@@ -48,6 +125,7 @@ export const HeatmapCoordinateDataProcessor: FC<{
   radius?: number;
   gradient?: Record<number, string>;
   hasArea?: boolean;
+  setCoordinatePersonalTrackingData?: (data: CoordinateHistoryType[] | null) => void;
 }> = ({
   data,
   showHeatmap = true,
@@ -56,35 +134,18 @@ export const HeatmapCoordinateDataProcessor: FC<{
   radius,
   gradient,
   hasArea = false,
+  setCoordinatePersonalTrackingData,
 }) => {
   const map = useMap();
   const heatmapConfig = heatmapDefaultConfig;
   // Convert to heatmap format: [lat, lng, intensity]
   const heatmapPoints = useMemo(() => {
-    // Create more granular heatmap points from individual coordinates
-    const allPoints: Array<[number, number, number]> = [];
-
-    data.forEach((coord) => {
-      if (coord.lat && coord.lon) {
-        const lat = parseFloat(coord.lat);
-        const lon = parseFloat(coord.lon);
-        allPoints.push([lat, lon, 1]);
-      }
-    });
-
-    // if not has area, change center and zoom based on the data
-    if (!hasArea) {
-      const bounds = calculateBounds(allPoints);
-      if (bounds) {
-        map.fitBounds(bounds, {
-          animate: true,
-          padding: [60, 60],
-        });
-      }
-    }
-
-    return allPoints;
+    return calculateHeatmapPoints(data, map, hasArea);
   }, [data]);
+
+  const setLengthTrackingIndex = useTrackingIndexStore((state) => state.setLength);
+  const setTrackingIndex = useTrackingIndexStore((state) => state.setTrackingIndex);
+  const setIsTrackingTimeline = useTrackingIndexStore((state) => state.setIsTrackingTimeline);
 
   // Individual markers for detailed information with clustering
   const individualMarkers = useMemo(() => {
@@ -117,7 +178,22 @@ export const HeatmapCoordinateDataProcessor: FC<{
                     {lat.toFixed(6)}, {lng.toFixed(6)}
                   </Text>
                   <Text fontSize="sm">{coord.user?.nama ?? coord.user_id}</Text>
-                  <Text fontSize="sm">{new Date(coord.timestamp).toLocaleString()}</Text>
+                  <Text fontSize="sm">{moment(coord.timestamp).format('D MMM YY, HH:mm')}</Text>
+                  {/* button to select all data with this user */}
+                  <Button
+                    variant={'outline'}
+                    size={'xs'}
+                    onClick={() => {
+                      const personalTrackingData = data.filter(
+                        (data) => data.user_id === coord.user_id
+                      );
+                      setCoordinatePersonalTrackingData?.(personalTrackingData);
+                      setLengthTrackingIndex(personalTrackingData.length);
+                      setTrackingIndex(0);
+                      setIsTrackingTimeline(true);
+                    }}>
+                    Lihat timeline {coord.user?.nama ?? coord.user_id}
+                  </Button>
                 </Box>
               </Popup>
             </CircleMarker>
@@ -176,6 +252,216 @@ export const HeatmapCoordinateDataProcessor: FC<{
         </MarkerClusterGroup>
       )}
       {showIndividualMarkers && !showClusteredMarkers && individualMarkers}
+    </>
+  );
+};
+
+export const HeatmapTrackingTimeLine: FC<{
+  data: CoordinateHistoryType[];
+  showHeatmap?: boolean;
+  showPolyline?: boolean;
+  showIndividualMarkers?: boolean;
+  radius?: number;
+  gradient?: Record<number, string>;
+}> = ({
+  data,
+  showHeatmap = true,
+  showPolyline = true,
+  showIndividualMarkers = true,
+  radius,
+  gradient,
+}) => {
+  const firstData = data[0];
+  const lastData = data[data.length - 1];
+  const map = useMap();
+  const heatmapConfig = heatmapDefaultConfig;
+
+  const selectedIndex = useTrackingIndexStore((state) => state.trackingIndex);
+  const setSelectedIndex = useTrackingIndexStore((state) => state.setTrackingIndex);
+
+  const selectedData = data[selectedIndex];
+
+  useEffect(() => {
+    map.setView([Number(selectedData.lat), Number(selectedData.lon)]);
+  }, [selectedData]);
+
+  useEffect(() => {
+    setSelectedIndex(0);
+  }, [data]);
+
+  // Convert to heatmap format: [lat, lng, intensity]
+  const heatmapPoints = useMemo(() => {
+    return calculateHeatmapPoints(data, map, false);
+  }, [data]);
+
+  // Individual markers for detailed information with clustering
+  const individualMarkers = useMemo(() => {
+    return data
+      .map((coord, index) => {
+        if (coord.lat && coord.lon) {
+          const lat = parseFloat(coord.lat);
+          const lng = parseFloat(coord.lon);
+
+          // Validate coordinates to prevent NaN values
+          if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+            return null; // Skip invalid coordinates
+          }
+
+          const isSelected = index === selectedIndex;
+          const isFirst = index === 0;
+          const isLast = index === data.length - 1;
+
+          // Determine marker styling based on position
+          let markerRadius = 6;
+          let fillColor = 'rgba(59, 130, 246, 0.6)'; // Blue for regular points
+          let borderColor = 'rgba(59, 130, 246, 0.8)';
+          let borderWeight = 2;
+
+          if (isFirst) {
+            fillColor = 'rgba(34, 197, 94, 0.8)'; // Green for start
+            borderColor = 'rgba(34, 197, 94, 1)';
+            markerRadius = 8;
+            borderWeight = 3;
+          } else if (isLast) {
+            fillColor = 'rgba(239, 68, 68, 0.8)'; // Red for end
+            borderColor = 'rgba(239, 68, 68, 1)';
+            markerRadius = 8;
+            borderWeight = 3;
+          }
+
+          return (
+            <CircleMarker
+              key={`marker-${index}`}
+              center={[lat, lng]}
+              radius={markerRadius}
+              fillColor={fillColor}
+              color={borderColor}
+              weight={borderWeight}
+              opacity={0.8}>
+              <Popup>
+                <Box minW="200px">
+                  <HStack spacing={2} w="100%">
+                    <Box
+                      w="3"
+                      h="3"
+                      borderRadius="full"
+                      bg={isFirst ? 'green.500' : isLast ? 'red.500' : 'blue.500'}
+                    />
+                    <Text fontWeight="bold" fontSize="sm" color="gray.700">
+                      {isFirst ? 'Start Point' : isLast ? 'End Point' : `Point ${index + 1}`}
+                    </Text>
+                    {isSelected && (
+                      <Badge colorScheme="orange" size="sm" variant="solid">
+                        Current
+                      </Badge>
+                    )}
+                  </HStack>
+
+                  <DetailedPopupContent
+                    selectedData={coord}
+                    selectedIndex={index}
+                    dataLength={data.length}
+                  />
+                </Box>
+              </Popup>
+            </CircleMarker>
+          );
+        }
+        return null;
+      })
+      .filter(Boolean); // Remove null values
+  }, [data]);
+
+  return (
+    <>
+      {showHeatmap && (
+        <HeatmapLayer
+          max={1}
+          minOpacity={0.6}
+          gradient={gradient ?? heatmapConfig.gradient}
+          radius={radius ?? heatmapConfig.radius}
+          points={heatmapPoints}
+          longitudeExtractor={(m) => m[1]}
+          latitudeExtractor={(m) => m[0]}
+          intensityExtractor={(m) => m[2]}
+        />
+      )}
+      {showIndividualMarkers && individualMarkers}
+
+      {/* Enhanced polyline with gradient effect */}
+      {showPolyline && (
+        <Polyline
+          positions={data.map((coord) => [Number(coord.lat), Number(coord.lon)])}
+          color="#3B82F6"
+          weight={3}
+          opacity={0.7}
+          dashArray="5, 10"
+          className="timeline-polyline"
+        />
+      )}
+
+      {/* Start marker with enhanced styling */}
+      <CircleMarker
+        radius={8}
+        fillColor="rgba(34, 197, 94, 0.9)"
+        color="rgba(34, 197, 94, 1)"
+        weight={3}
+        center={[Number(firstData.lat), Number(firstData.lon)]}>
+        <Popup>
+          <Box minW="200px">
+            <Text fontWeight="bold" color="green.600" fontSize="sm">
+              Start Point
+            </Text>
+            <DetailedPopupContent
+              selectedData={firstData}
+              selectedIndex={0}
+              dataLength={data.length}
+            />
+          </Box>
+        </Popup>
+      </CircleMarker>
+
+      {/* End marker with enhanced styling */}
+      <CircleMarker
+        radius={8}
+        fillColor="rgba(239, 68, 68, 0.9)"
+        color="rgba(239, 68, 68, 1)"
+        weight={3}
+        center={[Number(lastData.lat), Number(lastData.lon)]}>
+        <Popup>
+          <Box minW="200px">
+            <Text fontWeight="bold" color="red.600" fontSize="sm">
+              End Point
+            </Text>
+            <DetailedPopupContent
+              selectedData={lastData}
+              selectedIndex={data.length - 1}
+              dataLength={data.length}
+            />
+          </Box>
+        </Popup>
+      </CircleMarker>
+
+      {/* Selected data marker with pulsing effect */}
+      <CircleMarker
+        radius={12}
+        fillColor="rgba(245, 158, 11, 0.8)"
+        color="rgba(245, 158, 11, 1)"
+        weight={4}
+        center={[Number(selectedData.lat), Number(selectedData.lon)]}>
+        <Popup>
+          <Box minW="200px">
+            <Text fontWeight="bold" color="orange.600" fontSize="sm">
+              📍 Current Position
+            </Text>
+            <DetailedPopupContent
+              selectedData={selectedData}
+              selectedIndex={selectedIndex}
+              dataLength={data.length}
+            />
+          </Box>
+        </Popup>
+      </CircleMarker>
     </>
   );
 };

@@ -36,6 +36,8 @@ export const MapsHeatmapLayerControl: FC<{
   setShowHeatmap: (show: boolean) => void;
   setShowClusteredMarkers: (show: boolean) => void;
   setShowMarker: (show: boolean) => void;
+  showPolyline?: boolean;
+  setShowPolyline?: (show: boolean) => void;
   heatmapGradient?: Record<number, string>;
 }> = ({
   areaOpacity,
@@ -49,6 +51,8 @@ export const MapsHeatmapLayerControl: FC<{
   setShowHeatmap,
   setShowClusteredMarkers,
   setShowMarker,
+  showPolyline,
+  setShowPolyline,
   heatmapGradient: heatmapGradientProp,
 }) => {
   const heatmapGradient = heatmapGradientProp ?? heatmapDefaultConfig.gradient;
@@ -334,7 +338,7 @@ export const MapsHeatmapLayerControl: FC<{
               </Button>
             </Tooltip>
 
-            {!isUsingH3 && (
+            {!isUsingH3 && showPolyline === undefined && (
               <Tooltip label="Toggle clustered marker view" placement="left">
                 <Button
                   size="sm"
@@ -358,6 +362,40 @@ export const MapsHeatmapLayerControl: FC<{
                   }}>
                   Clustered
                   {showClusteredMarkers && (
+                    <Badge
+                      ml="auto"
+                      colorScheme="blue"
+                      variant="solid"
+                      borderRadius="full"
+                      fontSize="xs"
+                      px={1.5}>
+                      ON
+                    </Badge>
+                  )}
+                </Button>
+              </Tooltip>
+            )}
+
+            {showPolyline !== undefined && setShowPolyline !== undefined && (
+              <Tooltip label="Toggle polyline" placement="left">
+                <Button
+                  size="sm"
+                  width="100%"
+                  variant="outline"
+                  bg={showPolyline ? activeFill : 'transparent'}
+                  borderColor={showPolyline ? activeBorder : borderColor}
+                  color={showPolyline ? 'blue.700' : textColor}
+                  onClick={() => setShowPolyline(!showPolyline)}
+                  leftIcon={<Icon as={FiMap} boxSize={3.5} />}
+                  justifyContent="flex-start"
+                  px={3}
+                  py={2}
+                  borderRadius="lg"
+                  fontSize="xs"
+                  fontWeight="500"
+                  transition="all 0.2s">
+                  Garis Timeline
+                  {showPolyline && (
                     <Badge
                       ml="auto"
                       colorScheme="blue"

@@ -1,5 +1,5 @@
 import { zValidator } from '@hono/zod-validator';
-import { and, count, desc, eq, gte, inArray, lte } from 'drizzle-orm';
+import { and, asc, count, eq, gte, inArray, lte } from 'drizzle-orm';
 import { cellArea, cellToLatLng, getResolution, latLngToCell } from 'h3-js';
 import { Hono } from 'hono';
 import { z } from 'zod';
@@ -99,7 +99,7 @@ export const coordinateHistoryRoute = new Hono()
       .from(coordinateHistorySchema)
       .leftJoin(userSchema, eq(coordinateHistorySchema.user_id, userSchema.id))
       .where(whereClause)
-      .orderBy(desc(coordinateHistorySchema.timestamp))
+      .orderBy(asc(coordinateHistorySchema.timestamp))
       .limit(limit)
       .offset(offset);
 
@@ -194,7 +194,7 @@ export const coordinateHistoryRoute = new Hono()
         .from(coordinateHistorySchema)
         .leftJoin(userSchema, eq(coordinateHistorySchema.user_id, userSchema.id))
         .where(whereClause)
-        .orderBy(desc(coordinateHistorySchema.timestamp))
+        .orderBy(asc(coordinateHistorySchema.timestamp))
         .limit(limit)
         .offset(offset);
 

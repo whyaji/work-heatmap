@@ -28,7 +28,10 @@ import { CoordinateHistoryType } from '@/types/coordinateHistory.type';
 import { BloksPolygonLayer } from '../components/bloks-polygon-layer/BloksPolygonLayer';
 import { ExportDataModal } from '../components/export-data-modal/ExportDataModal';
 import { ExportImageModal } from '../components/export-image-modal/ExportImageModal';
-import { HeatmapCoordinateDataProcessor } from '../components/maps-heatmap/MapsHeatmaps';
+import {
+  HeatmapCoordinateDataProcessor,
+  HeatmapTrackingTimeLine,
+} from '../components/maps-heatmap/MapsHeatmaps';
 import { MapsHeatmapLayerControl } from '../components/maps-heatmap-layer-control/MapsHeatmapLayerControl';
 import { ScreenErrorDashboard } from '../components/screen-error-dashboard/ScreenErrorDashboard';
 import { SideBarDashboard } from '../components/side-bar-dashboard/SideBarDashboard';
@@ -37,6 +40,7 @@ import listMapTileOptions from '../constants/listMapTileOptions';
 import { useFilterAreaForm } from '../hooks/useFIlterAreaForm.hook';
 import { useFilterDataForm } from '../hooks/useFilterDataForm.hook';
 import { useInfiniteCoordinateHistory } from '../hooks/useInfiniteFetchCoordinate.hook';
+import { useTrackingIndexStore } from '../lib/store/trackingIndexStore';
 import { BlokGeoJSON } from '../types/blockGeoJson.type';
 import {
   getAreaGeoJsonBlokData,
@@ -86,6 +90,7 @@ export const DashboardScreen = () => {
   const [showClusteredMarkers, setShowClusteredMarkers] = useState(true);
   const [showMarker, setShowMarker] = useState(true);
   const [blokOpacity, setBlokOpacity] = useState(0.2);
+  const [showPolyline, setShowPolyline] = useState(true);
   const [radius, setRadius] = useState(30);
   const [tempRadius, setTempRadius] = useState(30);
   const [selectedMapTileIndex, setSelectedMapTileIndex] = useState(0);
@@ -186,6 +191,10 @@ export const DashboardScreen = () => {
   // Coordinate History Data
   const [selectedGeoJsonBlok, setSelectedGeoJsonBlok] = useState<BlokGeoJSON | null>(null);
   const [coordinateHistoryData, setCoordinateHistoryData] = useState<CoordinateHistoryType[]>([]);
+  const [coordinatePersonalTrackingData, setCoordinatePersonalTrackingData] = useState<
+    CoordinateHistoryType[] | null
+  >(null);
+  const isTrackingTimeline = useTrackingIndexStore((state) => state.isTrackingTimeline);
 
   // Auto-paginated coordinate history query
   const {
@@ -459,6 +468,8 @@ export const DashboardScreen = () => {
           setShowHeatmap={setShowHeatmap}
           setShowClusteredMarkers={setShowClusteredMarkers}
           setShowMarker={setShowMarker}
+          showPolyline={isTrackingTimeline ? showPolyline : undefined}
+          setShowPolyline={isTrackingTimeline ? setShowPolyline : undefined}
         />
 
         {/* Map Container */}
@@ -482,14 +493,26 @@ export const DashboardScreen = () => {
             {isMobile !== undefined && !isExportImageOpen && (
               <ZoomControls onZoomIn={handleZoomIn} onZoomOut={handleZoomOut} isMobile={isMobile} />
             )}
-            <HeatmapCoordinateDataProcessor
-              data={coordinateHistoryData}
-              showHeatmap={showHeatmap}
-              showClusteredMarkers={showClusteredMarkers}
-              showIndividualMarkers={showMarker}
-              radius={radius}
-              hasArea={selectedGeoJsonBlok !== null}
-            />
+            {!isTrackingTimeline && (
+              <HeatmapCoordinateDataProcessor
+                data={coordinateHistoryData}
+                showHeatmap={showHeatmap}
+                showClusteredMarkers={showClusteredMarkers}
+                showIndividualMarkers={showMarker}
+                radius={radius}
+                hasArea={selectedGeoJsonBlok !== null}
+                setCoordinatePersonalTrackingData={setCoordinatePersonalTrackingData}
+              />
+            )}
+            {isTrackingTimeline && coordinatePersonalTrackingData !== null && (
+              <HeatmapTrackingTimeLine
+                data={coordinatePersonalTrackingData}
+                showPolyline={showPolyline}
+                showIndividualMarkers={showMarker}
+                showHeatmap={showHeatmap}
+                radius={radius}
+              />
+            )}
           </MapContainer>
         </Box>
       </Box>

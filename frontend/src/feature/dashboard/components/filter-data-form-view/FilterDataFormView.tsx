@@ -15,6 +15,7 @@ import { FiCalendar, FiFilter, FiUser } from 'react-icons/fi';
 import { User } from '@/lib/api/userApi';
 
 import { useFilterDataForm } from '../../hooks/useFilterDataForm.hook';
+import { useTrackingIndexStore } from '../../lib/store/trackingIndexStore';
 
 export const FilterDataFormView: FC<{
   userListData: User[];
@@ -29,8 +30,11 @@ export const FilterDataFormView: FC<{
   onClearFilters,
   isExportImageOpen = false,
 }) => {
+  const isTrackingTimeline = useTrackingIndexStore((state) => state.isTrackingTimeline);
   const { startDate, setStartDate, endDate, setEndDate, selectedUserId, setSelectedUserId } =
     filterDataFormState;
+
+  const disabledFilters = isTrackingTimeline;
 
   return (
     <VStack spacing={4} align="stretch">
@@ -49,6 +53,7 @@ export const FilterDataFormView: FC<{
         </FormLabel>
         <Input
           type="datetime-local"
+          disabled={disabledFilters}
           value={startDate}
           onChange={(e) => setStartDate(e.target.value)}
           size="sm"
@@ -72,6 +77,7 @@ export const FilterDataFormView: FC<{
         </FormLabel>
         <Input
           type="datetime-local"
+          disabled={disabledFilters}
           value={endDate}
           onChange={(e) => setEndDate(e.target.value)}
           size="sm"
@@ -95,6 +101,7 @@ export const FilterDataFormView: FC<{
         </FormLabel>
         <Select
           value={selectedUserId}
+          disabled={disabledFilters}
           onChange={(e) => setSelectedUserId(e.target.value)}
           size="sm"
           borderRadius="lg"
@@ -112,7 +119,7 @@ export const FilterDataFormView: FC<{
         </Select>
       </FormControl>
 
-      {!isExportImageOpen && (
+      {!isExportImageOpen && !disabledFilters && (
         <>
           <HStack justify="center" pt={2}>
             <Button

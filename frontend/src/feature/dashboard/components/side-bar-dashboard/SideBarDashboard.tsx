@@ -1,5 +1,9 @@
 import {
+  Alert,
+  AlertIcon,
+  AlertTitle,
   Box,
+  Button,
   Card,
   CardBody,
   Collapse,
@@ -9,16 +13,18 @@ import {
   Icon,
   IconButton,
   Image,
+  Progress,
   Stat,
   StatHelpText,
   StatLabel,
   StatNumber,
   Text,
+  Tooltip,
   VStack,
 } from '@chakra-ui/react';
 import { keyframes } from '@emotion/react';
 import { FC, useEffect, useRef, useState } from 'react';
-import { FiChevronDown, FiMenu } from 'react-icons/fi';
+import { FiChevronDown, FiChevronUp, FiMenu, FiSkipBack, FiSkipForward } from 'react-icons/fi';
 import { IconType } from 'react-icons/lib';
 
 import { User } from '@/lib/api/userApi';
@@ -26,6 +32,7 @@ import { AreaType } from '@/types/area.type';
 
 import { useFilterAreaForm } from '../../hooks/useFIlterAreaForm.hook';
 import { useFilterDataForm } from '../../hooks/useFilterDataForm.hook';
+import { useTrackingIndexStore } from '../../lib/store/trackingIndexStore';
 import { CustomizeFormView } from '../customize-form-view/CustomizeFormView';
 import { FilterAreaFormView } from '../filter-area-form-view/FilterAreaFormView';
 import { FilterDataFormView } from '../filter-data-form-view/FilterDataFormView';
@@ -87,6 +94,13 @@ export const SideBarDashboard: FC<{
   setTempRadius,
   isExportImageOpen = false,
 }) => {
+  const isTrackingTimeline = useTrackingIndexStore((state) => state.isTrackingTimeline);
+  const setIsTrackingTimeline = useTrackingIndexStore((state) => state.setIsTrackingTimeline);
+  const trackingIndex = useTrackingIndexStore((state) => state.trackingIndex);
+  const onNextIndex = useTrackingIndexStore((state) => state.onNextIndex);
+  const onPrevIndex = useTrackingIndexStore((state) => state.onPrevIndex);
+  const lengthTrackingIndex = useTrackingIndexStore((state) => state.length);
+
   const [sidebarWidth, setSidebarWidth] = useState(340);
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
@@ -270,6 +284,135 @@ export const SideBarDashboard: FC<{
                   </Card>
                 ))}
               </VStack>
+
+              {!isExportImageOpen && (
+                <>
+                  <Divider />
+                  <Text fontSize="sm" fontWeight="semibold" color="gray.700">
+                    Tracking Timeline
+                  </Text>
+
+                  {isTrackingTimeline ? (
+                    <>
+                      {/* Progress Bar */}
+                      <Box w="100%">
+                        <HStack justify="space-between" mb={1}>
+                          <Text fontSize="xs" color="gray.500" fontWeight="500">
+                            Progress
+                          </Text>
+                          <Text fontSize="xs" color="blue.500" fontWeight="600">
+                            {trackingIndex + 1} / {lengthTrackingIndex}
+                          </Text>
+                        </HStack>
+                        <Progress
+                          value={
+                            lengthTrackingIndex > 0
+                              ? ((trackingIndex + 1) / lengthTrackingIndex) * 100
+                              : 0
+                          }
+                          size="sm"
+                          colorScheme="blue"
+                          borderRadius="full"
+                          bg="gray.100"
+                        />
+                      </Box>
+
+                      {/* Navigation Controls */}
+                      <HStack spacing={2} w="100%">
+                        <Tooltip label="Go to first point" placement="top">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            colorScheme="blue"
+                            onClick={() => useTrackingIndexStore.getState().setTrackingIndex(0)}
+                            isDisabled={trackingIndex === 0}
+                            flex={1}
+                            leftIcon={<Icon as={FiSkipBack} boxSize={3} />}
+                            fontSize="xs"
+                            className="timeline-control-btn">
+                            First
+                          </Button>
+                        </Tooltip>
+
+                        <Tooltip label="Previous point" placement="top">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            colorScheme="blue"
+                            onClick={() => onPrevIndex()}
+                            isDisabled={trackingIndex === 0}
+                            flex={1}
+                            leftIcon={
+                              <Icon as={FiChevronUp} boxSize={3} transform="rotate(-90deg)" />
+                            }
+                            fontSize="xs"
+                            className="timeline-control-btn">
+                            Prev
+                          </Button>
+                        </Tooltip>
+
+                        <Tooltip label="Next point" placement="top">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            colorScheme="blue"
+                            onClick={() => onNextIndex()}
+                            isDisabled={trackingIndex >= lengthTrackingIndex - 1}
+                            flex={1}
+                            leftIcon={
+                              <Icon as={FiChevronUp} boxSize={3} transform="rotate(90deg)" />
+                            }
+                            fontSize="xs"
+                            className="timeline-control-btn">
+                            Next
+                          </Button>
+                        </Tooltip>
+
+                        <Tooltip label="Go to last point" placement="top">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            colorScheme="blue"
+                            onClick={() =>
+                              useTrackingIndexStore
+                                .getState()
+                                .setTrackingIndex(lengthTrackingIndex - 1)
+                            }
+                            isDisabled={trackingIndex >= lengthTrackingIndex - 1}
+                            flex={1}
+                            leftIcon={<Icon as={FiSkipForward} boxSize={3} />}
+                            fontSize="xs"
+                            className="timeline-control-btn">
+                            Last
+                          </Button>
+                        </Tooltip>
+                      </HStack>
+
+                      {/* Message tutup timeline untuk mengubah filter menggunakan alert*/}
+                      <Button
+                        size="xs"
+                        variant="outline"
+                        colorScheme="red"
+                        onClick={() => setIsTrackingTimeline(false)}>
+                        Tutup
+                      </Button>
+                      <Alert status="warning" variant="subtle" borderRadius="lg" p={3}>
+                        <AlertIcon />
+                        <AlertTitle fontSize="xs" fontWeight="normal" color="gray.700">
+                          Tutup timeline untuk mengubah filter
+                        </AlertTitle>
+                      </Alert>
+                    </>
+                  ) : (
+                    <Alert status="info" variant="subtle" borderRadius="lg" p={3}>
+                      <AlertIcon />
+                      <AlertTitle fontSize="xs" fontWeight="normal" color="gray.700">
+                        Pilih salah satu koordinat untuk melihat timeline
+                      </AlertTitle>
+                    </Alert>
+                  )}
+                </>
+              )}
 
               <Divider />
 
