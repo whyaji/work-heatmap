@@ -23,6 +23,7 @@ import { FiChevronUp, FiEye, FiGrid, FiLayers, FiMap } from 'react-icons/fi';
 
 import heatmapDefaultConfig from '../../constants/heatmapConfig';
 import listMapTileOptions from '../../constants/listMapTileOptions';
+import { TrackingTimelinePlayer } from '../tracking-timeline-player/TrackingTimelinePlayer';
 
 export const MapsHeatmapLayerControl: FC<{
   areaOpacity?: number;
@@ -117,6 +118,7 @@ export const MapsHeatmapLayerControl: FC<{
 
   return (
     <Box {...boxProps}>
+      <TrackingTimelinePlayer />
       <VStack
         spacing={0}
         bg={bgColor}
@@ -125,7 +127,7 @@ export const MapsHeatmapLayerControl: FC<{
         borderColor={borderColor}
         boxShadow="lg"
         overflow="hidden"
-        minWidth="280px">
+        minWidth="300px">
         {/* Header with toggle and badge */}
         <HStack
           w="100%"
