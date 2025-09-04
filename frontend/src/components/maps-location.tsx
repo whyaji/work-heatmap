@@ -1,7 +1,10 @@
 import { Box, IconButton, Tooltip, VStack } from '@chakra-ui/react';
-import { useCallback, useEffect, useRef } from 'react';
+import { LatLngBounds } from 'leaflet';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { FiZoomIn, FiZoomOut } from 'react-icons/fi';
 import { useMap, useMapEvents } from 'react-leaflet';
+
+import { useZoomBoundStore } from '@/feature/dashboard/lib/store/zoomBoundStore';
 
 // Zoom Control Component that uses the map instance
 export function ZoomControls({
@@ -135,6 +138,43 @@ export function MapBoundsListener({
       };
 
       debouncedSetBounds(windowBounds);
+    },
+  });
+
+  return null;
+}
+
+export function MapZoomBoundsListener({ debounceTime = 300 }: { debounceTime?: number }) {
+  const timeoutRef = useRef<Timer | null>(null);
+  const setZoom = useZoomBoundStore((state) => state.setZoom);
+  const setBounds = useZoomBoundStore((state) => state.setBounds);
+  const [componentZoom, setComponentZoom] = useState(0);
+  const [componentBounds, setComponentBounds] = useState<LatLngBounds | null>(null);
+
+  useEffect(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    timeoutRef.current = setTimeout(() => {
+      if (componentZoom) {
+        setZoom(componentZoom);
+      }
+      if (componentBounds) {
+        setBounds(componentBounds);
+      }
+    }, debounceTime);
+  }, [componentZoom, componentBounds, debounceTime]);
+
+  useMapEvents({
+    zoomend: (e) => {
+      const map = e.target;
+      const zoom = map.getZoom();
+      setComponentZoom(zoom);
+    },
+    moveend: (e) => {
+      const map = e.target;
+      const bounds = map.getBounds();
+      setComponentBounds(bounds);
     },
   });
 

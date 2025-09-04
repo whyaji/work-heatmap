@@ -13,3 +13,34 @@ export type BlokGeoJSON = {
     };
   }[];
 };
+
+export type AfdelingGeoJSON = {
+  type: 'FeatureCollection';
+  features: {
+    type: 'Feature';
+    properties: {
+      estate: string;
+      afdeling: string;
+      center: [number, number];
+    };
+    geometry: {
+      type: 'Polygon';
+      coordinates: [number, number][][];
+    };
+  }[];
+};
+
+export type EstateGeoJSON = {
+  type: 'FeatureCollection';
+  features: {
+    type: 'Feature';
+    properties: {
+      estate: string;
+      center: [number, number];
+    };
+    geometry: {
+      type: 'Polygon';
+      coordinates: [number, number][][];
+    };
+  }[];
+};

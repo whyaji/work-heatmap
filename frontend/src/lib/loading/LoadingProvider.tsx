@@ -119,7 +119,7 @@ export const LoadingProvider = () => {
                     height="8px"
                     borderRadius="full"
                     bg="blue.400"
-                    animation={`${pulseDot} 1.4s infinite`}
+                    animation={`${pulseDot} 2s infinite`}
                     style={{ animationDelay: `${index * 0.2}s` }}
                   />
                 ))}

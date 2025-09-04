@@ -2,9 +2,9 @@ import './MapsHeatmaps.css';
 
 import { Badge, Box, Button, HStack, Text } from '@chakra-ui/react';
 import { HeatmapLayerFactory } from '@vgrid/react-leaflet-heatmap-layer';
-import L, { LatLngBounds } from 'leaflet';
+import L, { LatLngBounds, LatLngTuple } from 'leaflet';
 import moment from 'moment';
-import { FC, useEffect, useMemo, useRef } from 'react';
+import { FC, useCallback, useEffect, useMemo, useRef } from 'react';
 import { CircleMarker, Marker, Polyline, Popup, useMap } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-markercluster';
 
@@ -12,6 +12,7 @@ import { CoordinateHistoryType, H3Type } from '@/types/coordinateHistory.type';
 
 import heatmapDefaultConfig from '../../constants/heatmapConfig';
 import { useTrackingIndexStore } from '../../lib/store/trackingIndexStore';
+import { useZoomBoundStore } from '../../lib/store/zoomBoundStore';
 
 const HeatmapLayer = HeatmapLayerFactory<[number, number, number]>();
 
@@ -136,7 +137,6 @@ const SelectedMarker: FC<{
     const open = setTimeout(() => {
       if (autoOpen && markerRef.current) {
         markerRef.current.openPopup();
-        console.log('open popup');
       }
     }, 500);
     return () => clearTimeout(open);
@@ -191,6 +191,7 @@ export const HeatmapCoordinateDataProcessor: FC<{
   setCoordinatePersonalTrackingData,
 }) => {
   const map = useMap();
+  const mapBounds = useZoomBoundStore((state) => state.bounds);
   const heatmapConfig = heatmapDefaultConfig;
   // Convert to heatmap format: [lat, lng, intensity]
   const heatmapPoints = useMemo(() => {
@@ -201,9 +202,16 @@ export const HeatmapCoordinateDataProcessor: FC<{
   const setTrackingIndex = useTrackingIndexStore((state) => state.setTrackingIndex);
   const setIsTrackingTimeline = useTrackingIndexStore((state) => state.setIsTrackingTimeline);
 
+  const getVisibleData = useCallback(() => {
+    return data.filter((point) => {
+      const centerCoords: LatLngTuple = [Number(point.lat), Number(point.lon)];
+      return mapBounds.contains(centerCoords);
+    });
+  }, [data, mapBounds]);
+
   // Individual markers for detailed information with clustering
   const individualMarkers = useMemo(() => {
-    return data
+    return getVisibleData()
       .map((coord, index) => {
         if (coord.lat && coord.lon) {
           const lat = parseFloat(coord.lat);
@@ -256,7 +264,7 @@ export const HeatmapCoordinateDataProcessor: FC<{
         return null;
       })
       .filter(Boolean); // Remove null values
-  }, [data]);
+  }, [data, getVisibleData]);
 
   return (
     <>

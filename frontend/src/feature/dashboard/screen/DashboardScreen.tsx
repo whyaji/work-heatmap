@@ -13,7 +13,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FiMapPin, FiUsers } from 'react-icons/fi';
 import { MapContainer, TileLayer } from 'react-leaflet';
 
-import { ZoomControls, ZoomListener } from '@/components/maps-location';
+import { MapZoomBoundsListener, ZoomControls, ZoomListener } from '@/components/maps-location';
 import {
   getEstatesAfdeling,
   getRegional,
@@ -513,6 +513,7 @@ export const DashboardScreen = () => {
                 radius={radius}
               />
             )}
+            <MapZoomBoundsListener />
           </MapContainer>
         </Box>
       </Box>

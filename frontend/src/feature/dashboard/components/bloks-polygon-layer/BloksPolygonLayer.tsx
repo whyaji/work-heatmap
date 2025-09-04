@@ -1,114 +1,64 @@
-import { DivIcon, LatLngBounds, LatLngTuple } from 'leaflet';
-import { FC, useEffect } from 'react';
+import type L from 'leaflet';
+import { LatLngTuple } from 'leaflet';
+import { FC, memo, useCallback, useEffect, useMemo } from 'react';
 import { Marker, Polygon, useMap } from 'react-leaflet';
 
 import { BlokGeoJSON } from '@/feature/dashboard/types/blockGeoJson.type';
 
-const convertGeoJSONToLeaflet = (coordinates: number[][]): LatLngTuple[] => {
-  return coordinates.map((coord) => [coord[1], coord[0]] as LatLngTuple);
-};
+import { useZoomBoundStore } from '../../lib/store/zoomBoundStore';
+import {
+  calculateBounds,
+  calculatePolygonCenter,
+  convertGeoJSONToLeaflet,
+  getListSetEstateAfdeling,
+  getTextAfdeling,
+  getTextBlock,
+  getTextEstate,
+  hasMultipleEstates,
+  isValidPolygon,
+} from '../../utils/blokPolygon';
 
-const isValidPolygon = (coordinates: number[][]): boolean => {
-  const uniquePoints = new Set(coordinates.map((coord) => `${coord[0]},${coord[1]}`));
-  return uniquePoints.size >= 3;
-};
+// Memoized polygon component to prevent unnecessary re-renders
+const MemoizedPolygon = memo<{
+  positions: LatLngTuple[];
+  pathOptions: {
+    fillColor: string;
+    color: string;
+    weight: number;
+    opacity: number;
+    fillOpacity: number;
+  };
+  fillOpacity: number;
+}>(({ positions, pathOptions, fillOpacity }) => (
+  <Polygon positions={positions} fillOpacity={fillOpacity} pathOptions={pathOptions} />
+));
 
-// Calculate the center of a polygon
-const calculatePolygonCenter = (coordinates: LatLngTuple[]): LatLngTuple => {
-  const sumLat = coordinates.reduce((sum, coord) => sum + coord[0], 0);
-  const sumLng = coordinates.reduce((sum, coord) => sum + coord[1], 0);
-  return [sumLat / coordinates.length, sumLng / coordinates.length];
-};
-
-// Calculate bounds for all polygons
-const calculateBounds = (blokGeoJSON: BlokGeoJSON): LatLngBounds | null => {
-  if (!blokGeoJSON.features || blokGeoJSON.features.length === 0) {
-    return null;
-  }
-
-  let minLat = Infinity;
-  let maxLat = -Infinity;
-  let minLng = Infinity;
-  let maxLng = -Infinity;
-
-  blokGeoJSON.features.forEach((feature) => {
-    const geoJsonCoords = feature.geometry.coordinates[0];
-    if (isValidPolygon(geoJsonCoords)) {
-      const leafletCoords = convertGeoJSONToLeaflet(geoJsonCoords);
-      leafletCoords.forEach((coord) => {
-        minLat = Math.min(minLat, coord[0]);
-        maxLat = Math.max(maxLat, coord[0]);
-        minLng = Math.min(minLng, coord[1]);
-        maxLng = Math.max(maxLng, coord[1]);
-      });
-    }
-  });
-
-  if (minLat === Infinity || maxLat === -Infinity || minLng === Infinity || maxLng === -Infinity) {
-    return null;
-  }
-
-  return new LatLngBounds([minLat, minLng], [maxLat, maxLng]);
-};
-
-// Calculate center for grouped polygons by estate or afdeling
-const calculateGroupCenter = (
-  blokGeoJSON: BlokGeoJSON,
-  groupBy: 'estate' | 'afdeling' | 'estate-afdeling'
-): Map<string, LatLngTuple> => {
-  const groupCenters = new Map<string, LatLngTuple>();
-  const groupCoordinates = new Map<string, LatLngTuple[]>();
-
-  blokGeoJSON.features.forEach((feature) => {
-    const geoJsonCoords = feature.geometry.coordinates[0];
-    if (isValidPolygon(geoJsonCoords)) {
-      const leafletCoords = convertGeoJSONToLeaflet(geoJsonCoords);
-      let groupName: string;
-
-      if (groupBy === 'estate-afdeling') {
-        groupName = `${feature.properties.estate} - ${feature.properties.afdeling}`;
-      } else {
-        groupName = feature.properties[groupBy];
-      }
-
-      if (!groupCoordinates.has(groupName)) {
-        groupCoordinates.set(groupName, []);
-      }
-
-      // Add all coordinates from this polygon to the group
-      groupCoordinates.get(groupName)!.push(...leafletCoords);
-    }
-  });
-
-  // Calculate center for each group
-  groupCoordinates.forEach((coordinates, groupName) => {
-    if (coordinates.length > 0) {
-      const sumLat = coordinates.reduce((sum, coord) => sum + coord[0], 0);
-      const sumLng = coordinates.reduce((sum, coord) => sum + coord[1], 0);
-      const center: LatLngTuple = [sumLat / coordinates.length, sumLng / coordinates.length];
-      groupCenters.set(groupName, center);
-    }
-  });
-
-  return groupCenters;
-};
-
-// Check if there are multiple estates
-const hasMultipleEstates = (blokGeoJSON: BlokGeoJSON): boolean => {
-  const estates = new Set(blokGeoJSON.features.map((feature) => feature.properties.estate));
-  return estates.size > 1;
-};
+// Memoized marker component
+const MemoizedMarker = memo<{
+  position: LatLngTuple;
+  icon: L.DivIcon | undefined;
+}>(({ position, icon }) => <Marker position={position} icon={icon} interactive={false} />);
 
 export const BloksPolygonLayer: FC<{ blokGeoJSON: BlokGeoJSON; opacity: number }> = ({
   blokGeoJSON,
   opacity,
 }) => {
   const map = useMap();
-  const zoom = map.getZoom();
+  const zoom = useZoomBoundStore((state) => state.zoom);
+  const mapBounds = useZoomBoundStore((state) => state.bounds);
+
+  // Memoize expensive computations
+  const { afdelingList, estateList, multipleEstates } = useMemo(() => {
+    const { afdelingList, estateList } = getListSetEstateAfdeling(blokGeoJSON);
+    const multipleEstates = hasMultipleEstates(blokGeoJSON);
+    return { afdelingList, estateList, multipleEstates };
+  }, [blokGeoJSON]);
+
+  // Memoize bounds calculation
+  const bounds = useMemo(() => calculateBounds(blokGeoJSON), [blokGeoJSON]);
 
   useEffect(() => {
     // Fit map bounds to show all polygons
-    const bounds = calculateBounds(blokGeoJSON);
     if (bounds) {
       map.fitBounds(bounds, {
         padding: [20, 20], // Add some padding around the bounds
@@ -116,111 +66,144 @@ export const BloksPolygonLayer: FC<{ blokGeoJSON: BlokGeoJSON; opacity: number }
         animate: true, // Smooth animation
       });
     }
-  }, [blokGeoJSON, map]);
+  }, [bounds, map]);
 
-  // Calculate group centers for estate and afdeling
-  const estateCenters = calculateGroupCenter(blokGeoJSON, 'estate');
-  const afdelingCenters = calculateGroupCenter(blokGeoJSON, 'afdeling');
-  const estateAfdelingCenters = calculateGroupCenter(blokGeoJSON, 'estate-afdeling');
-  const multipleEstates = hasMultipleEstates(blokGeoJSON);
+  // Viewport culling - only render polygons visible in current viewport
+  const getVisibleFeatures = useCallback(() => {
+    return blokGeoJSON.features.filter((feature) => {
+      const geoJsonCoords = feature.geometry.coordinates[0];
+      if (!isValidPolygon(geoJsonCoords)) return false;
 
-  return (
-    <>
-      {blokGeoJSON.features.map((feature, index) => {
-        const geoJsonCoords = feature.geometry.coordinates[0]; // Get outer ring
+      const leafletCoords = convertGeoJSONToLeaflet(geoJsonCoords);
+      const centerCoords = calculatePolygonCenter(leafletCoords);
 
-        // Validate polygon
-        if (!isValidPolygon(geoJsonCoords)) {
-          console.warn(
-            `Skipping invalid polygon for block ${feature.properties.block}: not enough unique points`
-          );
-          return null;
-        }
+      return mapBounds.contains(centerCoords);
+    });
+  }, [blokGeoJSON, mapBounds]);
 
-        // Convert GeoJSON coordinates [lng, lat] to Leaflet coordinates [lat, lng]
-        const leafletCoords = convertGeoJSONToLeaflet(geoJsonCoords);
+  // Level of detail - render different elements based on zoom level
+  const visibleFeatures = useMemo(() => {
+    if (zoom <= 13) return []; // Don't render blocks at low zoom
+    return getVisibleFeatures(); // Render all visible blocks at high zoom
+  }, [zoom, getVisibleFeatures]);
 
-        // Calculate center of polygon for text label
-        const centerCoords = calculatePolygonCenter(leafletCoords);
+  // Memoize polygon rendering
+  const renderBlocks = useMemo(() => {
+    if (zoom <= 13) return [];
+    return visibleFeatures.map((feature, index) => {
+      const geoJsonCoords = feature.geometry.coordinates[0];
 
-        // Create custom icon for text label based on zoom level
-        const getTextIcon = (zoom: number) => {
-          let text = '';
-          let fontSize = '12px';
-          let labelCenter: LatLngTuple | null = null;
+      // Convert GeoJSON coordinates [lng, lat] to Leaflet coordinates [lat, lng]
+      const leafletCoords = convertGeoJSONToLeaflet(geoJsonCoords);
 
-          if (zoom > 13) {
-            text = feature.properties.block;
-            fontSize = '12px';
-            labelCenter = centerCoords; // Use individual polygon center for blocks
-          } else if (zoom > 11) {
-            if (multipleEstates) {
-              text = `${feature.properties.estate} - ${feature.properties.afdeling}`;
-              labelCenter =
-                estateAfdelingCenters.get(
-                  `${feature.properties.estate} - ${feature.properties.afdeling}`
-                ) || null;
-            } else {
-              text = feature.properties.afdeling;
-              labelCenter = afdelingCenters.get(feature.properties.afdeling) || null;
-            }
-            fontSize = '14px';
-          } else if (zoom > 9) {
-            text = feature.properties.estate;
-            fontSize = '16px';
-            labelCenter = estateCenters.get(feature.properties.estate) || null;
-          }
+      // Calculate center of polygon for text label
+      const centerCoords = calculatePolygonCenter(leafletCoords);
 
-          if (!text || !labelCenter) return null;
+      const text = feature.properties.block;
+      const textIcon = getTextBlock(text, zoom);
 
-          return new DivIcon({
-            html: `<div style="
-              background: transparent;
-              border: none;
-              font-size: ${fontSize};
-              font-weight: bold;
-              color:rgb(0, 0, 0);
-              text-shadow: 1px 1px 2px white, -1px -1px 2px white, 1px -1px 2px white, -1px 1px 2px white;
-              pointer-events: none;
-              user-select: none;
-              text-align: center;
-              white-space: nowrap;
-            ">${text}</div>`,
-            className: 'polygon-label',
-            iconSize: [100, 20],
-            iconAnchor: [50, 10],
-          });
-        };
-
-        const textIcon = getTextIcon(zoom);
-        const labelCenter =
-          zoom > 13
-            ? centerCoords
-            : zoom > 11
-              ? multipleEstates
-                ? estateAfdelingCenters.get(
-                    `${feature.properties.estate} - ${feature.properties.afdeling}`
-                  ) || centerCoords
-                : afdelingCenters.get(feature.properties.afdeling) || centerCoords
-              : estateCenters.get(feature.properties.estate) || centerCoords;
-
-        return (
-          <div key={`polygon-${index}`}>
-            <Polygon
+      return {
+        polygon: (
+          <div key={`polygon-${feature.properties.block}-${index}`}>
+            <MemoizedPolygon
               positions={leafletCoords}
               fillOpacity={opacity}
               pathOptions={{
                 fillColor: '#3b82f6',
                 color: '#1d4ed8',
-                weight: 3,
+                weight: 2,
                 opacity: opacity,
                 fillOpacity: opacity,
               }}
             />
-            {textIcon && <Marker position={labelCenter} icon={textIcon} interactive={false} />}
+            {zoom > 13 && textIcon && <MemoizedMarker position={centerCoords} icon={textIcon} />}
           </div>
-        );
-      })}
+        ),
+        text: (
+          <div key={`polygon-text-${feature.properties.block}-${index}`}>
+            {zoom > 13 && textIcon && <MemoizedMarker position={centerCoords} icon={textIcon} />}
+          </div>
+        ),
+      };
+    });
+  }, [visibleFeatures, zoom, opacity]);
+
+  // Memoize afdeling rendering
+  const renderAfdelings = useMemo(() => {
+    return afdelingList.map((afdeling) => {
+      const textIcon = getTextAfdeling(afdeling, zoom, multipleEstates);
+      const coordinates = afdeling.afdelingGeoJSON.features[0].geometry.coordinates[0];
+      const leafletCoords = convertGeoJSONToLeaflet(coordinates);
+      const centerCoords: LatLngTuple = [afdeling.center[1], afdeling.center[0]];
+
+      return {
+        polygon: (
+          <div key={`afdeling-polygon-${afdeling.estate}-${afdeling.afdeling}`}>
+            <MemoizedPolygon
+              positions={leafletCoords}
+              fillOpacity={opacity}
+              pathOptions={{
+                fillColor: zoom > 13 ? 'transparent' : '#3b82f6',
+                color: '#158879',
+                weight: 3,
+                opacity: opacity * 2,
+                fillOpacity: opacity,
+              }}
+            />
+          </div>
+        ),
+        text: (
+          <div key={`afdeling-text-${afdeling.estate}-${afdeling.afdeling}`}>
+            {zoom > 11 && textIcon && <MemoizedMarker position={centerCoords} icon={textIcon} />}
+          </div>
+        ),
+      };
+    });
+  }, [afdelingList, zoom, opacity, multipleEstates]);
+
+  // Memoize estate rendering
+  const renderEstates = useMemo(() => {
+    return estateList.map((estate) => {
+      const textIcon = getTextEstate(estate, zoom);
+      const coordinates = estate.estateGeoJSON.features[0].geometry.coordinates[0];
+      const leafletCoords = convertGeoJSONToLeaflet(coordinates);
+      const centerCoords: LatLngTuple = [estate.center[1], estate.center[0]];
+
+      return {
+        polygon: (
+          <div key={`estate-polygon-${estate.estate}`}>
+            <MemoizedPolygon
+              positions={leafletCoords}
+              fillOpacity={opacity}
+              pathOptions={{
+                fillColor: 'rgba(0 0 0 / 0)',
+                color: '#D81D1D',
+                weight: 3,
+                opacity: opacity * 2,
+                fillOpacity: opacity * 2,
+              }}
+            />
+          </div>
+        ),
+        text: (
+          <div key={`estate-text-${estate.estate}`}>
+            {zoom >= 10 && zoom <= 11 && textIcon && (
+              <MemoizedMarker position={centerCoords} icon={textIcon} />
+            )}
+          </div>
+        ),
+      };
+    });
+  }, [estateList, zoom, opacity]);
+
+  return (
+    <>
+      {renderBlocks.map(({ polygon }) => polygon)}
+      {renderAfdelings.map(({ polygon }) => polygon)}
+      {renderEstates.map(({ polygon }) => polygon)}
+      {renderAfdelings.map(({ text }) => text)}
+      {renderEstates.map(({ text }) => text)}
+      {renderBlocks.map(({ text }) => text)}
     </>
   );
 };
