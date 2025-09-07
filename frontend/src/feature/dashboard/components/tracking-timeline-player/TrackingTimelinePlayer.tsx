@@ -1,5 +1,6 @@
 import {
   Box,
+  Button,
   Collapse,
   HStack,
   Icon,
@@ -27,6 +28,8 @@ import {
   FiX,
 } from 'react-icons/fi';
 
+import { getShortDateTime } from '@/utils/dateTimeFormatter';
+
 import { useTrackingIndexStore } from '../../lib/store/trackingIndexStore';
 
 const pulseBoxShadow = keyframes`
@@ -50,6 +53,7 @@ export const TrackingTimelinePlayer = () => {
     setTrackingIndex,
     onNextIndex,
     onPrevIndex,
+    coordinateDetail,
   } = useTrackingIndexStore();
 
   const [isPlaying, setIsPlaying] = useState(false);
@@ -89,11 +93,9 @@ export const TrackingTimelinePlayer = () => {
         }
         // saya ingin semakin banyak speed semakin sedikit intervalnya
       }, 1000 / playbackSpeed);
-    } else {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
+    } else if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
     }
 
     return () => {
@@ -138,6 +140,7 @@ export const TrackingTimelinePlayer = () => {
 
   // Color scheme for overlay on satellite/street view - Updated for smoke black background
   const bgColor = 'rgba(0, 0, 0, 0.3)'; // Smoke black semi-transparent
+  const secondBgColor = 'rgba(0, 0, 0, 0.1)'; // Darker background for buttons and sliders
   const borderColor = 'rgba(255, 255, 255, 0.2)';
   const textColor = 'white';
   const accentColor = '#4C58FA'; // Light blue for better contrast on dark background
@@ -164,40 +167,48 @@ export const TrackingTimelinePlayer = () => {
         backdropFilter="blur(1px)"
         align="stretch">
         {/* Header with close button */}
-        <HStack justify="space-between" w="100%" px={4} py={2}>
-          <HStack spacing={2} onClick={() => setIsOpen(true)} flex={1}>
-            <Icon as={FiClock} color={highlightColor} boxSize={4} />
-            <Text fontSize="sm" fontWeight="600" color={textColor}>
-              Tracking Timeline
-            </Text>
-          </HStack>
+        <Button
+          w="100%"
+          p={0}
+          variant="ghost"
+          _hover={{ bg: secondBgColor }}
+          borderTopRadius="xl"
+          onClick={() => setIsOpen(!isOpen)}>
+          <HStack justify="space-between" w="100%" px={4} py={2}>
+            <HStack spacing={2}>
+              <Icon as={FiClock} color={highlightColor} boxSize={4} />
+              <Text fontSize="sm" fontWeight="600" color={textColor}>
+                Tracking Timeline
+              </Text>
+            </HStack>
 
-          <HStack spacing={2}>
-            {/* minimize and maximize */}
-            <Tooltip label="Minimize" placement="top">
-              <IconButton
-                size="xs"
-                aria-label="Minimize"
-                variant="ghost"
-                _hover={{ bg: 'black' }}
-                icon={<Icon color="white" as={isOpen ? FiMinus : FiChevronUp} />}
-                onClick={() => setIsOpen(!isOpen)}
-              />
-            </Tooltip>
+            <HStack spacing={2}>
+              {/* minimize and maximize */}
+              <Tooltip label="Minimize" placement="top">
+                <IconButton
+                  size="xs"
+                  aria-label="Minimize"
+                  variant="ghost"
+                  _hover={{ bg: 'black' }}
+                  icon={<Icon color="white" as={isOpen ? FiMinus : FiChevronUp} />}
+                  onClick={() => setIsOpen(!isOpen)}
+                />
+              </Tooltip>
 
-            <Tooltip label="Tutup timeline" placement="top">
-              <IconButton
-                size="xs"
-                aria-label="Close timeline"
-                variant="ghost"
-                colorScheme="red"
-                _hover={{ bg: 'red.500', color: 'white' }}
-                icon={<Icon as={FiX} />}
-                onClick={() => setIsTrackingTimeline(false)}
-              />
-            </Tooltip>
+              <Tooltip label="Tutup timeline" placement="top">
+                <IconButton
+                  size="xs"
+                  aria-label="Close timeline"
+                  variant="ghost"
+                  colorScheme="red"
+                  _hover={{ bg: 'red.500', color: 'white' }}
+                  icon={<Icon as={FiX} />}
+                  onClick={() => setIsTrackingTimeline(false)}
+                />
+              </Tooltip>
+            </HStack>
           </HStack>
-        </HStack>
+        </Button>
 
         <Collapse
           in={isOpen}
@@ -206,6 +217,21 @@ export const TrackingTimelinePlayer = () => {
             width: '100%',
           }}>
           <VStack spacing={3} p={4} align="stretch">
+            {/* Coordinate details, display timestamp and user?.name */}
+            {coordinateDetail && (
+              <Box
+                bg="rgba(11, 11, 11, 0.4)"
+                borderRadius="md"
+                p={2}
+                textAlign="center"
+                boxShadow="inset 0 0 5px rgba(0, 0, 0, 0.2)">
+                <Text fontSize="xs" color={textColor} fontWeight="600">
+                  {coordinateDetail.user?.nama ?? 'Pengguna tidak dikenal'} -{' '}
+                  {getShortDateTime(coordinateDetail.timestamp)}{' '}
+                </Text>
+              </Box>
+            )}
+
             {/* Progress indicator */}
             <Box w="100%">
               <HStack justify="space-between" mb={2}>

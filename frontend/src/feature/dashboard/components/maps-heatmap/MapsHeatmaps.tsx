@@ -3,12 +3,12 @@ import './MapsHeatmaps.css';
 import { Badge, Box, Button, HStack, Text } from '@chakra-ui/react';
 import { HeatmapLayerFactory } from '@vgrid/react-leaflet-heatmap-layer';
 import L, { LatLngBounds, LatLngTuple } from 'leaflet';
-import moment from 'moment';
 import { FC, useCallback, useEffect, useMemo, useRef } from 'react';
 import { CircleMarker, Marker, Polyline, Popup, useMap } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-markercluster';
 
 import { CoordinateHistoryType, H3Type } from '@/types/coordinateHistory.type';
+import { getShortDateTime } from '@/utils/dateTimeFormatter';
 
 import heatmapDefaultConfig from '../../constants/heatmapConfig';
 import { useTrackingIndexStore } from '../../lib/store/trackingIndexStore';
@@ -104,7 +104,7 @@ const DetailedPopupContent: FC<{
         {selectedData.user?.nama ?? selectedData.user_id}
       </Text>
       <Text fontSize="sm" color="gray.700">
-        {moment(selectedData.timestamp).format('D MMM YY, HH:mm')}
+        {getShortDateTime(selectedData.timestamp)}
       </Text>
       <Text fontSize="xs" color="gray.500">
         {getTimeAgo(new Date(selectedData.timestamp))}
@@ -129,7 +129,7 @@ const SelectedMarker: FC<{
   selectedData: CoordinateHistoryType;
   selectedIndex: number;
   dataLength: number;
-  autoOpen: boolean;
+  autoOpen?: boolean;
 }> = ({ position, selectedData, selectedIndex, dataLength, autoOpen = false }) => {
   const markerRef = useRef<L.Marker | null>(null);
 
@@ -240,7 +240,7 @@ export const HeatmapCoordinateDataProcessor: FC<{
                     {lat.toFixed(6)}, {lng.toFixed(6)}
                   </Text>
                   <Text fontSize="sm">{coord.user?.nama ?? coord.user_id}</Text>
-                  <Text fontSize="sm">{moment(coord.timestamp).format('D MMM YY, HH:mm')}</Text>
+                  <Text fontSize="sm">{getShortDateTime(coord.timestamp)}</Text>
                   {/* button to select all data with this user */}
                   <Button
                     variant={'outline'}
@@ -339,17 +339,14 @@ export const HeatmapTrackingTimeLine: FC<{
   const heatmapConfig = heatmapDefaultConfig;
 
   const selectedIndex = useTrackingIndexStore((state) => state.trackingIndex);
-  const setSelectedIndex = useTrackingIndexStore((state) => state.setTrackingIndex);
+  const setCoordinateDetail = useTrackingIndexStore((state) => state.setCoordinateDetail);
 
   const selectedData = data[selectedIndex];
 
   useEffect(() => {
+    setCoordinateDetail(selectedData);
     map.setView([Number(selectedData.lat), Number(selectedData.lon)]);
   }, [selectedData]);
-
-  useEffect(() => {
-    setSelectedIndex(0);
-  }, [data]);
 
   // Convert to heatmap format: [lat, lng, intensity]
   const heatmapPoints = useMemo(() => {
@@ -504,7 +501,6 @@ export const HeatmapTrackingTimeLine: FC<{
         selectedData={selectedData}
         selectedIndex={selectedIndex}
         dataLength={data.length}
-        autoOpen={true}
       />
     </>
   );
