@@ -49,6 +49,28 @@ import {
   getSelectedWilayahFilterArea,
 } from '../utils/getAreaData';
 
+if (typeof window !== 'undefined') {
+  const originalFetch = window.fetch;
+  const customFetch = (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+    if (typeof input === 'string' && input.includes('tile.openstreetmap.org')) {
+      return originalFetch(input, {
+        ...init,
+        headers: {
+          ...init?.headers,
+          'User-Agent': 'CWA+ CBI Work Area Plus/1.0.0 (https://cwa.digital-architect.id/)',
+        },
+      });
+    }
+    return originalFetch(input, init);
+  };
+
+  // Preserve all original fetch properties
+  Object.setPrototypeOf(customFetch, originalFetch);
+  Object.assign(customFetch, originalFetch);
+
+  window.fetch = customFetch as typeof fetch;
+}
+
 export const DashboardScreen = () => {
   // Global
   const { showLoading, hideLoading } = useLoading();
