@@ -1,0 +1,69 @@
+name: Deploy Project
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    environment: Production
+
+    steps:
+      # Step 1: checkout code from repository
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Set up Bun environment
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      # Step 3: Install & Build Frontend
+      - name: Install frontend dependencies
+        run: bun install --frozen-lockfile
+        working-directory: ./frontend
+
+      - name: Build frontend
+        run: bun run build
+        working-directory: ./frontend
+
+      # Step 4: Upload frontend build to VPS
+      # Only the 'dist' folder containing static files is uploaded
+      - name: Upload frontend build to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: 'frontend/dist/*'
+          target: '${{ secrets.SSH_HOME_PROJECT }}/frontend/dist'
+          
+      # Step 5: Deploy backend to VPS via SSH
+      # Running a series of commands on the server to update and restart the backend
+      - name: Deploy backend and restart server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            echo "Starting deployment process (opening directory)..."
+            cd ${{ secrets.SSH_HOME_PROJECT }}
+
+            echo "==> 1. Pulling latest changes from main branch..."
+            git pull origin main
+
+            echo "==> 2. Installing backend dependencies..."
+            bun install --frozen-lockfile
+
+            echo "==> 3. Running database migrations..."
+            bunx drizzle-kit migrate
+
+            echo "==> 4. Reloading application with PM2 for zero downtime..."
+            pm2 reload work-heatmap-api
+
+            echo "==> Deployment completed successfully! ✅"
