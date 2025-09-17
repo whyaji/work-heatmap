@@ -27,6 +27,11 @@ jobs:
         run: bun install --frozen-lockfile
         working-directory: ./frontend
 
+      # Creates the .env file in the frontend directory from your GitHub secret
+      - name: Create frontend .env file
+        run: echo "${{ secrets.FRONTEND_ENV_FILE }}" > .env
+        working-directory: ./frontend
+
       - name: Build frontend
         run: bun run build
         working-directory: ./frontend
