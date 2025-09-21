@@ -63,6 +63,7 @@ export const TrackingTimelinePlayer = () => {
   } = useTrackingIndexStore();
 
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isSpeedMenuOpen, setIsSpeedMenuOpen] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const intervalRef = useRef<Timer | null>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -247,94 +248,116 @@ export const TrackingTimelinePlayer = () => {
                   {trackingIndex + 1} / {lengthTrackingIndex}
                 </Text>
                 <HStack>
-                <Popover placement="top">
-                <PopoverTrigger>
-                  <Box>
-                    <Tooltip label="Atur kecepatan" placement="top">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        bg={buttonBg}
-                        color={textColor}
-                        _hover={{ bg: buttonHoverBg }}
-                        leftIcon={<Icon as={FiZap} />}
-                        fontSize="xs"
-                        fontWeight="600"
-                        px={3}
-                        h="26px"
-                        w="75px"
-                        borderRadius="full">
-                        {playbackSpeed}x
-                      </Button>
-                    </Tooltip>
-                  </Box>
-                </PopoverTrigger>
-                <PopoverContent 
-                  bg={buttonBg} 
-                  borderColor="rgba(255, 255, 255, 0.1)" 
-                  boxShadow="0 8px 32px rgba(0, 0, 0, 0.4)"
-                  w="200px">
-                  <PopoverArrow bg={buttonBg} />
-                  <PopoverBody p={4}>
-                    <VStack spacing={3}>
-                      <Text fontSize="xs" color={textColor} fontWeight="600">
-                        Kecepatan Pemutaran
-                      </Text>
-                      
-                      {/* Speed preset buttons */}
-                      <HStack spacing={1} w="100%">
-                        {[0.25, 0.5, 1, 1.5, 2].map((speed) => (
+                  <Popover placement="top" isOpen={isSpeedMenuOpen}>
+                    <PopoverTrigger>
+                      <Box>
+                        <Tooltip label="Atur kecepatan" placement="top">
                           <Button
-                            key={speed}
-                            size="xs"
-                            variant={playbackSpeed === speed ? "solid" : "ghost"}
-                            bg={playbackSpeed === speed ? accentColor : "transparent"}
-                            color={playbackSpeed === speed ? "white" : textColor}
-                            _hover={{ 
-                              bg: playbackSpeed === speed ? accentColor : buttonHoverBg 
-                            }}
-                            onClick={() => setPlaybackSpeed(speed)}
+                            onClick={() => setIsSpeedMenuOpen(!isSpeedMenuOpen)}
+                            size="sm"
+                            variant="ghost"
+                            bg={buttonBg}
+                            color={textColor}
+                            _hover={{ bg: buttonHoverBg }}
+                            leftIcon={<Icon as={FiZap} />}
                             fontSize="xs"
                             fontWeight="600"
-                            flex={1}
-                            h="24px">
-                            {speed}x
+                            px={3}
+                            h="26px"
+                            w="75px"
+                            borderRadius="full">
+                            {playbackSpeed}x
                           </Button>
-                        ))}
-                      </HStack>
-
-                      {/* Custom speed slider */}
-                      <Box w="100%">
-                        <Text fontSize="2xs" color={textColor} mb={2} opacity={0.8}>
-                          Kustom
-                        </Text>
-                        <Slider
-                          value={playbackSpeed}
-                          onChange={setPlaybackSpeed}
-                          min={0.25}
-                          max={2}
-                          step={0.25}
-                          size="sm"
-                          colorScheme="blue">
-                          <SliderTrack h={2} borderRadius="full" bg={sliderTrackBg}>
-                            <SliderFilledTrack bg={accentColor} />
-                          </SliderTrack>
-                          <SliderThumb
-                            boxSize={4}
-                            bg={accentColor}
-                            _hover={{ bg: accentColor, transform: 'scale(1.1)' }}
-                            _active={{ bg: accentColor }}
-                            boxShadow="0 2px 6px rgba(0, 0, 0, 0.3)"
-                          />
-                        </Slider>
+                        </Tooltip>
                       </Box>
-                    </VStack>
-                  </PopoverBody>
-                </PopoverContent>
-              </Popover>
-                <Text fontSize="xs" color={highlightColor} fontWeight="600" w="50px" textAlign="right">
-                  {isPlaying ? 'Diputar' : 'Dijeda'}
-                </Text>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      bg={buttonBg}
+                      borderColor="rgba(255, 255, 255, 0.1)"
+                      boxShadow="0 8px 32px rgba(0, 0, 0, 0.4)"
+                      w="200px">
+                      <PopoverArrow bg={buttonBg} />
+                      <PopoverBody p={4}>
+                        <VStack spacing={3}>
+                          <HStack w="100%" justify="space-between">
+                            <HStack spacing={1}>
+                              <Icon as={FiZap} color={highlightColor} boxSize={4} />
+                              <Text fontSize="sm" fontWeight="600" color={textColor}>
+                                Kecepatan Putar
+                              </Text>
+                            </HStack>
+                            <Tooltip label="Tutup speed menu" placement="top">
+                              <IconButton
+                                size="xs"
+                                aria-label="Close speed menu"
+                                variant="ghost"
+                                colorScheme="red"
+                                _hover={{ bg: 'red.500', color: 'white' }}
+                                icon={<Icon as={FiX} />}
+                                onClick={() => setIsSpeedMenuOpen(false)}
+                              />
+                            </Tooltip>
+                          </HStack>
+
+                          {/* Speed preset buttons */}
+                          <HStack spacing={1} w="100%">
+                            {[0.25, 0.5, 1, 1.5, 2].map((speed) => (
+                              <Button
+                                key={speed}
+                                size="xs"
+                                variant={playbackSpeed === speed ? 'solid' : 'ghost'}
+                                bg={playbackSpeed === speed ? accentColor : 'transparent'}
+                                color={playbackSpeed === speed ? 'white' : textColor}
+                                _hover={{
+                                  bg: playbackSpeed === speed ? accentColor : buttonHoverBg,
+                                }}
+                                onClick={() => setPlaybackSpeed(speed)}
+                                fontSize="xs"
+                                fontWeight="600"
+                                flex={1}
+                                h="24px">
+                                {speed}x
+                              </Button>
+                            ))}
+                          </HStack>
+
+                          {/* Custom speed slider */}
+                          <Box w="100%">
+                            <Text fontSize="2xs" color={textColor} mb={2} opacity={0.8}>
+                              Kustom
+                            </Text>
+                            <Slider
+                              value={playbackSpeed}
+                              onChange={setPlaybackSpeed}
+                              min={0.25}
+                              max={2}
+                              step={0.25}
+                              size="sm"
+                              colorScheme="blue">
+                              <SliderTrack h={2} borderRadius="full" bg={sliderTrackBg}>
+                                <SliderFilledTrack bg={accentColor} />
+                              </SliderTrack>
+                              <SliderThumb
+                                boxSize={4}
+                                bg={accentColor}
+                                _hover={{ bg: accentColor, transform: 'scale(1.1)' }}
+                                _active={{ bg: accentColor }}
+                                boxShadow="0 2px 6px rgba(0, 0, 0, 0.3)"
+                              />
+                            </Slider>
+                          </Box>
+                        </VStack>
+                      </PopoverBody>
+                    </PopoverContent>
+                  </Popover>
+                  <Text
+                    fontSize="xs"
+                    color={highlightColor}
+                    fontWeight="600"
+                    w="50px"
+                    textAlign="right">
+                    {isPlaying ? 'Diputar' : 'Dijeda'}
+                  </Text>
                 </HStack>
               </HStack>
               <Slider

@@ -36,21 +36,38 @@ jobs:
         run: bun run build
         working-directory: ./frontend
 
-      # Step 4: Upload frontend build to VPS
-      # Only the 'dist' folder containing static files is uploaded
-      - name: Upload frontend build to server
-        uses: appleboy/scp-action@v0.1.7
+      # Step 4: Prepare server folder and backup old assets
+      - name: Prepare server folder
+        uses: appleboy/ssh-action@v1.2.2
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: 'frontend/dist/*'
-          target: '${{ secrets.SSH_HOME_PROJECT }}/frontend/dist'
+          script: |
+            cd ${{ secrets.SSH_HOME_PROJECT }}/frontend
+            if [ -d "dist-old" ]; then
+              rm -rf dist-old
+            fi
+            if [ -d "dist" ]; then
+              mv dist dist-old
+            fi
 
-      # Step 5: Deploy backend to VPS via SSH
+      # Step 5: Upload frontend build to VPS
+      # Only the 'dist' folder containing static files is uploaded
+      - name: Upload frontend build to server
+        uses: appleboy/scp-action@v1.0.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: 'frontend/dist'
+          target: '${{ secrets.SSH_HOME_PROJECT }}/frontend'
+          strip_components: 1
+
+      # Step 6: Deploy backend to VPS via SSH
       # Running a series of commands on the server to update and restart the backend
       - name: Deploy backend and restart server
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@v1.2.2
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
