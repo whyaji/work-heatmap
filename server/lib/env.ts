@@ -7,6 +7,7 @@ const envSchema = z.object({
   LOG_LEVEL: z.string().default('info'),
   NODE_ENV: z.enum(['development', 'staging', 'production']).default('development'),
   DB_HOST: z.string().default('localhost'),
+  DB_PORT: z.string().default('3306'),
   DB_USER: z.string(),
   DB_PASSWORD: z.string(),
   DB_NAME: z.string(),

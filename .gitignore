@@ -29,5 +29,3 @@ lerna-debug.log*
 
 server/public
 dump.rdb
-
-server/lib/geojson-files/*
