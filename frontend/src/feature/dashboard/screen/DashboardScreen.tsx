@@ -23,6 +23,7 @@ import {
 import { CoordinateHistoryFilters } from '@/lib/api/coordinateHistoryApi';
 import { getUsers } from '@/lib/api/userApi';
 import { useLoading } from '@/lib/loading/useLoading.hook';
+import { AreaType } from '@/types/area.type';
 import { CoordinateHistoryType } from '@/types/coordinateHistory.type';
 
 import { BloksPolygonLayer } from '../components/bloks-polygon-layer/BloksPolygonLayer';
@@ -46,6 +47,7 @@ import {
   getAreaGeoJsonBlokData,
   getSelectedAfdelingFilterArea,
   getSelectedEstateFilterArea,
+  getSelectedRegionalFilterArea,
   getSelectedWilayahFilterArea,
 } from '../utils/getAreaData';
 
@@ -264,26 +266,47 @@ export const DashboardScreen = () => {
   const getAreaGeoJsonBlok = async (
     wilayah: string | null,
     estate: string | null,
-    afdeling: string | null
+    afdeling: string | null,
+    regional: string | null
   ) => {
-    if (estate || wilayah) {
+    if (estate || wilayah || regional) {
+      const newDataEstate: AreaType[] = [];
+      let usingRegionalData = false;
+
+      if (regional && !wilayah && !estate && !afdeling) {
+        usingRegionalData = true;
+
+        for (const wilayahItem of dataWilayah) {
+          try {
+            const estates = await getWilayahsEstate(wilayahItem.id.toString());
+            if (estates && 'data' in estates) {
+              newDataEstate.push(...estates.data);
+            }
+          } catch (err) {
+            console.error(`Error fetching estates for wilayah ${wilayahItem.id}:`, err);
+          }
+        }
+      }
+
       showLoading();
       try {
         const geoJsonBlok = await getAreaGeoJsonBlokData({
-          dataEstate,
+          dataEstate: usingRegionalData ? newDataEstate : dataEstate,
           estate,
           wilayah,
           afdeling,
+          regional,
         });
         if (geoJsonBlok) {
           setSelectedGeoJsonBlok(geoJsonBlok);
         } else {
           throw new Error('Error fetching area geojson blok');
         }
-      } catch {
+      } catch (error) {
+        console.error('Error fetching area geojson blok', error);
         toast({
           title: 'Error',
-          description: 'Gagal mengambil data blok',
+          description: `Gagal mengambil data blok: ${error}`,
           status: 'error',
           duration: 3000,
           isClosable: true,
@@ -330,11 +353,12 @@ export const DashboardScreen = () => {
       );
 
       if (!isLoadingEstates) {
-        const wilayah = getSelectedWilayahFilterArea(dataWilayah, selectedWilayahId);
-        if (wilayah && filterAreaChanged) {
+        const regional = getSelectedRegionalFilterArea(dataRegional, selectedRegionalId);
+        if (regional && filterAreaChanged) {
+          const wilayah = getSelectedWilayahFilterArea(dataWilayah, selectedWilayahId);
           const estate = getSelectedEstateFilterArea(dataEstate, selectedEstateId);
           const afdeling = getSelectedAfdelingFilterArea(dataAfdeling, selectedAfdelingId);
-          await getAreaGeoJsonBlok(wilayah, estate, afdeling);
+          await getAreaGeoJsonBlok(wilayah, estate, afdeling, regional);
           setFilterArea(newFilterArea);
         } else {
           hasAppliedFilters.current = true;

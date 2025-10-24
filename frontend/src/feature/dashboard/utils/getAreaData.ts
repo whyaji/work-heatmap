@@ -16,6 +16,19 @@ export const getSelectedWilayahFilterArea = (
   return wilayah;
 };
 
+export const getSelectedRegionalFilterArea = (
+  dataRegional: AreaType[],
+  selectedRegionalId: string
+) => {
+  const selectedRegionalAbbr =
+    dataRegional.find((regional) => String(regional.id) === selectedRegionalId)?.abbr ?? null;
+  const splitRegionalAbbr = selectedRegionalAbbr ? selectedRegionalAbbr.split(' ')[1] : null;
+  const regionalAddZero = (splitRegionalAbbr ?? '').length === 1 ? `0${splitRegionalAbbr}` : null;
+  const regional = (splitRegionalAbbr ?? '').length > 1 ? splitRegionalAbbr : regionalAddZero;
+
+  return regional;
+};
+
 export const getSelectedEstateFilterArea = (dataEstate: AreaType[], selectedEstateId: string) => {
   const selectedEstateAbbr =
     dataEstate.find((estate) => String(estate.id) === selectedEstateId)?.abbr ?? null;
@@ -39,11 +52,13 @@ export const getAreaGeoJsonBlokData = async ({
   estate,
   wilayah,
   afdeling,
+  regional,
 }: {
   dataEstate: AreaType[];
   estate: string | null;
   wilayah: string | null;
   afdeling: string | null;
+  regional: string | null;
 }) => {
   try {
     if (estate) {
@@ -52,23 +67,36 @@ export const getAreaGeoJsonBlokData = async ({
         return geoJsonBlok as BlokGeoJSON;
       }
       throw new Error('Error fetching area geojson blok');
-    } else if (wilayah) {
+    } else if (wilayah || regional) {
       const estates = dataEstate.map((estate) => estate.abbr);
-      const geoJsonListResponse = await Promise.all(
-        estates.map((estate) => getGeoJsonBlok(estate, afdeling))
-      );
-      const geoJsonListSuccess = geoJsonListResponse.filter(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (geoJson): geoJson is { type: string; features: any[] } =>
-          'type' in geoJson && 'features' in geoJson && geoJson.features.length > 0
-      );
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const geoJsonListResponse: { type: string; features: any[] }[] = [];
+
+      for (const estate of estates) {
+        try {
+          const geoJson = await getGeoJsonBlok(estate, afdeling);
+          if (
+            geoJson &&
+            'type' in geoJson &&
+            'features' in geoJson &&
+            geoJson.features.length > 0
+          ) {
+            geoJsonListResponse.push(geoJson);
+          }
+        } catch (err) {
+          console.error(`Error fetching GeoJSON for ${estate}:`, err);
+        }
+      }
+
       const geoJson =
-        geoJsonListSuccess && geoJsonListSuccess.length > 0
+        geoJsonListResponse.length > 0
           ? {
-              type: geoJsonListSuccess[0].type,
-              features: geoJsonListSuccess.flatMap((geoJson) => geoJson.features),
+              type: geoJsonListResponse[0].type,
+              features: geoJsonListResponse.flatMap((geo) => geo.features),
             }
           : null;
+
       return geoJson as BlokGeoJSON;
     }
   } catch {
